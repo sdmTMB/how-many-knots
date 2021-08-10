@@ -1,0 +1,117 @@
+---
+output:
+  pdf_document:
+    keep_tex: yes
+---
+
+
+```{r global_options, include=FALSE}
+# Knitr options
+knitr::opts_chunk$set(fig.width=3, fig.height=2, 
+                      fig.path='figures/',
+                      size="footnotesize",
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+# Load inlabru and dolphin data
+
+```{r}
+library(INLA)
+library(inlabru)
+library(RColorBrewer)
+library(ggmap) # For Google map plotting
+init.tutorial() # Turn on empirical Bayes for faster execution of code example
+data(mexdolphin)
+mesh = mexdolphin$mesh
+```
+
+# Plotting the data on a map
+
+Sometimes the connection to Google fails, so we wrap this in a `tryCatch()` call.
+
+```{r mexdolphin_ggmap, fig.height=3, fig.width=6, message=FALSE, warning=FALSE}
+tryCatch({
+  gmap(mexdolphin$points) +
+    gm(mesh, ext.color = "darkgrey", int.color = "black", edge.color = "darkgrey") +
+    gm(mexdolphin$samplers, color = "white", size=1) +
+    gm(mexdolphin$ppoly, color = "black") +
+    gm(mexdolphin$points, color = "brown", fill="red", shape = 21) +
+    xlim(-100,-81) +
+    ylim(22,32)
+  },
+  error = function(e) {
+    cat("Failed to plot the map.\n")
+    cat("Likely problem: temporary Google retrieval issue.\n")
+    cat("Error: ", e$message, "\n")
+  })
+```
+
+
+# Inference
+
+Define detection function
+
+```{r}
+hazard = function(distance, lsig) { 
+  1 - exp(-(distance / exp(lsig))^-1)
+}
+```
+
+Define random variables and model formula:
+
+```{r}
+rvs = ~ spat(map = coordinates, 
+             model = inla.spde2.matern(mesh)) + 
+                     lsig + Intercept
+prd = coordinates + distance ~
+        spat +
+        log(hazard(distance, lsig)) +
+        log(1/8) +
+        Intercept
+```
+The offset term $\log(1/8)$ expresses that the sampling model already includes integration perpendicular to the transect, but the detection is modeled separately from this, along the transect half-width of $8$~km.  This is a valid approach when the transect is narrow compared with the variability of the intensity field, so that $\lambda(s)$ is locally linear, perpendicular to the transect.  For wide transects, one would need to specify the sampler transects as complete rectangular polygons, and calculate the transect distances for each constructed numerical integration point. That is currently not implemented (v2.1.4).
+
+Fit the model
+
+```{r}
+fit = lgcp(rvs, 
+           mexdolphin$points,
+           samplers = mexdolphin$samplers,
+           domain = list(distance = c(0, 8)),
+           formula = prd)
+```
+
+# Results
+
+Predict dolphin intensity
+
+```{r}
+pxl = pixels(mesh, nx = 500, ny = 300)
+int = predict(fit, pxl, ~ exp(spat + Intercept))
+```
+
+Plot dolphin group intensity (in counts per square km)
+in the native coordinate system for the data set,
+a Lambert Conic Conformal projection
+
+```{r mexdolph_sp_intensity, fig.width=8}
+colsc <- scale_fill_gradientn(colours = brewer.pal(9, "Oranges"),
+                              limits = range(int$mean))
+ggplot() + gg(int) + colsc +
+  gg(mexdolphin$ppoly) + 
+  gg(mexdolphin$samplers, color = "grey") + gg(mexdolphin$points, size = 0.2, alpha = 1) + 
+  theme(legend.key.width = unit(x = 0.2,"cm"), legend.key.height = unit(x = 0.3,"cm")) +
+  theme(legend.text=element_text(size=6)) +
+  xlab("Easting") + ylab("Northing") +
+  coord_equal()
+```
+
+
+Check expected total observed group count:
+```{r}
+ipt = cprod(ipoints(mexdolphin$samplers),
+            ipoints(c(0, 8), name = "distance"))
+total = predict(fit, ipt, ~ sum(weight * exp(spat + Intercept) * hazard(distance, lsig) / 8))
+cbind(data.frame(observed = nrow(mexdolphin$points)),
+      total)
+```

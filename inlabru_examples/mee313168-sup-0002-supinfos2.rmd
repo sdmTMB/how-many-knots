@@ -1,0 +1,75 @@
+---
+output:
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r global_options, include=FALSE}
+# Knitr options
+knitr::opts_chunk$set(fig.width=3, fig.height=2, 
+                      fig.path='figures/',
+                      size="footnotesize",
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+
+# Load inlabru and dolphin data
+
+```{r}
+library(INLA)
+library(inlabru)
+data(mexdolphin)
+```
+
+# Inference
+
+Define detection function
+
+```{r}
+hazard = function(distance, lsig) { 
+  1 - exp(-(distance/ exp(lsig))^-1)
+}
+```
+
+Define random variables and model formula
+
+```{r}
+prd = distance ~ log(hazard(distance, lsig)) + 
+                 Intercept
+rvs = ~ lsig + Intercept 
+```
+
+Fit the model
+
+```{r}
+fit = lgcp(rvs, 
+           mexdolphin$points, 
+           formula = prd)
+```
+
+# Results
+
+predict the detection function
+
+```{r}
+df = data.frame(distance = seq(0,8, by = 0.1))
+detfun = predict(fit, df, ~ hazard(distance, lsig))
+```
+
+Plot it
+
+```{r}
+fig.detfun = plot(detfun, color = "red") + ylab("detection probability")
+
+fig.hist = ggplot(data.frame(mexdolphin$points)) + 
+  geom_histogram(aes(x=distance), breaks = seq(0, 8, by = 1), alpha = 0.3) + 
+  geom_point(aes(x=distance), y = 0.2, shape = "|", size = 3)
+
+```
+
+```{r mexdolph_dfun, fig.height=2, fig.width=5}
+multiplot(fig.hist, fig.detfun, cols = 2)
+```
+
+
+
