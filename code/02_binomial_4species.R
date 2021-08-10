@@ -1,12 +1,10 @@
 # remotes::install_github("inlabru-org/fmesher", ref = "stable")
-library(sf)
+# library(sf)
 library(inlabru)
 library(INLA)
 library(dplyr)
 # library(fmesher)
 # https://www.maths.ed.ac.uk/~flindgre/2018/07/22/spatially-varying-mesh-quality/
-library(future)
-plan(multisession)
 
 haul <- readRDS("data/haul_cleaned.rds")
 catch <- readRDS("data/catch_cleaned.rds")
@@ -94,7 +92,7 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 
@@ -109,8 +107,11 @@ for (i in 1:nrow(df)) {
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
       if (fit_train$ok == TRUE) {
-        pred_test <- predict(fit_train, haul_new[test_indx, ])
-        haul_new$pred[test_indx] <- pred_test$Intercept$mean + pred_test$field$mean
+        pred_test <- predict(fit_train, 
+          data = haul_new[test_indx, , drop = FALSE], 
+          formula = ~ Intercept + field
+        )
+        haul_new$pred[test_indx] <- pred_test$mean
       } else {
         # model had issues
         haul_new$pred[test_indx] <- NA
