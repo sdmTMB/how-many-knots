@@ -98,7 +98,7 @@ for (i in 1:nrow(df)) {
     )
   )
   df$dens_ll[i] <- fit$sum_loglik
-  saveRDS(df, "output/02_binom_dens_4species_TMB.rds")
 }
+saveRDS(df, "output/08_binom_dens_4species_TMB.rds")
 
 plan(sequential)
