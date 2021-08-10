@@ -63,14 +63,14 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
   # calculate cpo
   fit <- bru(components,
     data = dover,
     family = "binomial",
-    options = list(verbose = T, control.compute = list(config = TRUE, cpo = TRUE, dic = TRUE, openmp.strategy = "huge"))
+    options = list(verbose = TRUE, control.compute = list(config = TRUE, cpo = TRUE, dic = TRUE, openmp.strategy = "huge"))
   )
   df$log_cpo[i] <- sum(log(fit$cpo$cpo))
   df$dic[i] <- fit$dic$dic

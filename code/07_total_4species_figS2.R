@@ -66,7 +66,7 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- cpue_kg_km2 ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 

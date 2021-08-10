@@ -95,7 +95,7 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- cpue_kg_km2 ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 
@@ -110,9 +110,12 @@ for (i in 1:nrow(df)) {
     test_indx <- which(haul_new$fold == k)
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
-      if (fit_train$ok == TRUE) {
-        pred_test <- predict(fit_train, haul_new[test_indx, ])
-        haul_new$pred[test_indx] <- pred_test$Intercept$mean + pred_test$field$mean
+      if (fit_train$ok) {
+        pred_test <- predict(fit_train, 
+          data = haul_new[test_indx, , drop = FALSE], 
+          formula = ~ Intercept + field
+        )
+        haul_new$pred[test_indx] <- pred_test$mean
       } else {
         # model had issues
         haul_new$pred[test_indx] <- NA

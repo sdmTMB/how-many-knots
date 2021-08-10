@@ -80,7 +80,7 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 
@@ -94,9 +94,13 @@ for (i in 1:nrow(df)) {
     test_indx <- which(dover$fold == k)
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
-      if (fit_train$ok == TRUE) {
-        pred_test <- predict(fit_train, dover[test_indx, ])
-        dover$pred[test_indx] <- pred_test$Intercept$mean + pred_test$field$mean
+      if (fit_train$ok) {
+        
+        pred_test <- predict(fit_train, 
+          data = dover[test_indx, , drop = FALSE], 
+          formula = ~ Intercept + field
+        )
+        dover$pred[test_indx] <- pred_test$mean
       } else {
         # model had issues
         dover$pred[test_indx] <- NA

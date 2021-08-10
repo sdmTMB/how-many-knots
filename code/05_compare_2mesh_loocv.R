@@ -54,23 +54,23 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 
   # do cross validation here
   fit_train <- try(bru(components,
-    dover[-df$holdout[i], ],
+    dover[-df$holdout[i], ,drop = FALSE],
     family = "binomial"
   ), silent = TRUE)
-  pred_test <- predict(fit_train, dover[df$holdout[i], ])
+  pred_test <- predict(fit_train, dover[df$holdout[i], ,drop = FALSE], ~ Intercept + field)
 
   # calculate total log density
   df$dens_ll[i] <-
     dbinom(
       dover$present[df$holdout[i]],
       size = 1,
-      prob = plogis(pred_test$Intercept$mean + pred_test$field$mean),
+      prob = plogis(pred_test$mean),
       log = TRUE
     )
 
