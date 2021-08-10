@@ -1,10 +1,10 @@
-#remotes::install_github("inlabru-org/fmesher", ref = "stable")
+# remotes::install_github("inlabru-org/fmesher", ref = "stable")
 library(sf)
 library(inlabru)
 library(INLA)
 library(dplyr)
-#library(fmesher)
-#https://www.maths.ed.ac.uk/~flindgre/2018/07/22/spatially-varying-mesh-quality/
+# library(fmesher)
+# https://www.maths.ed.ac.uk/~flindgre/2018/07/22/spatially-varying-mesh-quality/
 library(blockCV)
 library(future)
 plan(multisession)
@@ -21,14 +21,17 @@ set.seed(2021)
 coordinates(dover) <- c("X", "Y")
 
 # initial loop over the cutoff values
-df <- expand.grid("cutoff" = seq(5, 135, by=10),
-                  "range" = seq(25,150,by=25),
-                  "folds"=c(10,40),
-                 "n" = NA,
-                "dens_ll" = NA)
+df <- expand.grid(
+  "cutoff" = seq(5, 135, by = 10),
+  "range" = seq(25, 150, by = 25),
+  "folds" = c(10, 40),
+  "n" = NA,
+  "dens_ll" = NA
+)
 # create boundary, same for all meshes
-boundary <- inla.nonconvex.hull(coordinates(dover), 
-                                convex = -0.05)
+boundary <- inla.nonconvex.hull(coordinates(dover),
+  convex = -0.05
+)
 
 for (i in 1:nrow(df)) {
   # n_blocks <- df$blocks[i]
@@ -44,54 +47,61 @@ for (i in 1:nrow(df)) {
   # dover <- dplyr::left_join(as.data.frame(dover), block_fold)
   # # return to SpatialPointsDataFrame
   # coordinates(dover) <- c("X", "Y")
-  # 
+  #
   pa_data <- sf::st_as_sf(dover, coords = c("longitude", "latitude"))
-  sb <- spatialBlock(speciesData = pa_data,
-                     species = "present",
-                     theRange = df$range[i],
-                     k = df$folds[i],
-                     selection = "systematic",
-                     showBlocks = FALSE)
-  dover$fold = sb$foldID
-  df$blocks[i] = nrow(as.data.frame(sb$blocks))
+  sb <- spatialBlock(
+    speciesData = pa_data,
+    species = "present",
+    theRange = df$range[i],
+    k = df$folds[i],
+    selection = "systematic",
+    showBlocks = FALSE
+  )
+  dover$fold <- sb$foldID
+  df$blocks[i] <- nrow(as.data.frame(sb$blocks))
 
   # create mesh
-  mesh <- inla.mesh.2d(loc = coordinates(dover),
-                       boundary = boundary,
-                       offset = c(-0.05,-0.05),
-                       max.n = 5000,
-                       max.n.strict = 5000,
-                       cutoff = df$cutoff[i],
-                       max.edge = c(100,500))
-  df$n[i] = mesh$n
-    
+  mesh <- inla.mesh.2d(
+    loc = coordinates(dover),
+    boundary = boundary,
+    offset = c(-0.05, -0.05),
+    max.n = 5000,
+    max.n.strict = 5000,
+    cutoff = df$cutoff[i],
+    max.edge = c(100, 500)
+  )
+  df$n[i] <- mesh$n
+
   # use PC prior for matern model
   matern <-
     inla.spde2.pcmatern(mesh,
-                        prior.sigma = c(10, 0.01),
-                        prior.range = c(1, 0.01))
+      prior.sigma = c(10, 0.01),
+      prior.range = c(1, 0.01)
+    )
   # components is equivalent to formula
-  components <- present ~ Intercept + field(map = coordinates,
-                                            model = matern)
-  
+  components <- present ~ Intercept + field(
+    map = coordinates,
+    model = matern
+  )
+
   # do cross validation here
   dover$pred <- NA
   for (k in 1:max(dover$fold)) {
     fit_train <- try(bru(components,
-                     dover[which(dover$fold != k),],
-                     family = "binomial"), silent=TRUE)
+      dover[which(dover$fold != k), ],
+      family = "binomial"
+    ), silent = TRUE)
     test_indx <- which(dover$fold == k)
     # if model didn't have problems
-    if(class(fit_train)[1]=="bru") {
-      if(fit_train$ok==TRUE) {
-        pred_test <- predict(fit_train, dover[test_indx,])
+    if (class(fit_train)[1] == "bru") {
+      if (fit_train$ok == TRUE) {
+        pred_test <- predict(fit_train, dover[test_indx, ])
         dover$pred[test_indx] <- pred_test$Intercept$mean + pred_test$field$mean
       } else {
         # model had issues
         dover$pred[test_indx] <- NA
       }
     }
-
   }
   # calculate total log density
   df$dens_ll[i] <-

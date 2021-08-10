@@ -6,58 +6,68 @@ library(sp)
 
 # Prepare data
 # haul data includes environmental covariates with location information
-haul = nwfscSurvey::PullHaul.fn(YearRange = c(2018), 
-                                SurveyName = "NWFSC.Combo")
+haul <- nwfscSurvey::PullHaul.fn(
+  YearRange = c(2018),
+  SurveyName = "NWFSC.Combo"
+)
 
 # project lat/lon to UTM, after removing missing values and unsatisfactory hauls
-haul = haul %>% filter(!is.na(longitude_dd), !is.na(latitude_dd), 
-                       performance == "Satisfactory") %>% 
+haul <- haul %>%
+  filter(
+    !is.na(longitude_dd), !is.na(latitude_dd),
+    performance == "Satisfactory"
+  ) %>%
   dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m)
 
-haul_trans = haul
+haul_trans <- haul
 coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")
 proj4string(haul_trans) <- CRS("+proj=longlat +datum=WGS84")
-newproj = paste("+proj=utm +zone=10 ellps=WGS84 +datum=WGS84")
+newproj <- paste("+proj=utm +zone=10 ellps=WGS84 +datum=WGS84")
 
 haul_trans <- spTransform(haul_trans, CRS(newproj))
-haul_trans = as.data.frame(haul_trans)
-haul$X = haul_trans$longitude_dd
-haul$Y = haul_trans$latitude_dd
+haul_trans <- as.data.frame(haul_trans)
+haul$X <- haul_trans$longitude_dd
+haul$Y <- haul_trans$latitude_dd
 
 # center and scale depth, removing NAs
-haul = dplyr::filter(haul, !is.na(depth_hi_prec_m))
-haul$log_depth_scaled = scale(log(haul$depth_hi_prec_m))
-haul$log_depth_scaled2 = haul$log_depth_scaled ^ 2
+haul <- dplyr::filter(haul, !is.na(depth_hi_prec_m))
+haul$log_depth_scaled <- scale(log(haul$depth_hi_prec_m))
+haul$log_depth_scaled2 <- haul$log_depth_scaled^2
 
 # catch data includes catch, effort, etc. This takes a few minutes to grab all ~ 900 spp
-catch = nwfscSurvey::PullCatch.fn(YearRange = c(2018), 
-                                  SurveyName="NWFSC.Combo")
+catch <- nwfscSurvey::PullCatch.fn(
+  YearRange = c(2018),
+  SurveyName = "NWFSC.Combo"
+)
 # format to later join catch and haul
-names(catch) = tolower(names(catch))
-catch$trawl_id = as.numeric(catch$trawl_id)
+names(catch) <- tolower(names(catch))
+catch$trawl_id <- as.numeric(catch$trawl_id)
 
-dover = dplyr::filter(catch, common_name=="Dover sole")
+dover <- dplyr::filter(catch, common_name == "Dover sole")
 
 # Join catch and haul data
-haul_new = haul %>% 
-  left_join(dover, by = "trawl_id") %>% 
-  select(trawl_id, X, Y, 
-         latitude = latitude_dd.x, 
-         longitude = longitude_dd.x, 
-         year = year, 
-         log_depth_scaled, 
-         log_depth_scaled2, 
-         cpue_kg_km2)
+haul_new <- haul %>%
+  left_join(dover, by = "trawl_id") %>%
+  select(trawl_id, X, Y,
+    latitude = latitude_dd.x,
+    longitude = longitude_dd.x,
+    year = year,
+    log_depth_scaled,
+    log_depth_scaled2,
+    cpue_kg_km2
+  )
 # Set NA CPUEs to 0
-haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] = 0
+haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
 
-saveRDS(haul_new,"data/doversole_cleaned.rds")
+saveRDS(haul_new, "data/doversole_cleaned.rds")
 
-saveRDS(haul,"data/haul_cleaned.rds")
+saveRDS(haul, "data/haul_cleaned.rds")
 
 # petrale sole", "darkblotched rockfish","lingcod", "sablefish
-sub = dplyr::filter(catch, common_name%in%c("Dover sole",
-                                            "petrale sole",
-                                            "darkblotched rockfish",
-                                            "lingcod"))
-saveRDS(sub,"data/catch_cleaned.rds")
+sub <- dplyr::filter(catch, common_name %in% c(
+  "Dover sole",
+  "petrale sole",
+  "darkblotched rockfish",
+  "lingcod"
+))
+saveRDS(sub, "data/catch_cleaned.rds")
