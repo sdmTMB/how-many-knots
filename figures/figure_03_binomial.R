@@ -11,7 +11,7 @@ df_bin$blocks <- as.factor(df_bin$blocks)
 g1 <- ggplot(df_bin, aes(n, dens_ll, group = blocks, col = blocks)) +
   geom_point(size = 2, alpha = 0.5) +
   # geom_line() +
-  geom_smooth(se = FALSE) +
+  geom_smooth(se = FALSE, method = "loess") +
   theme_bw() +
   scale_color_brewer(palette = "Dark2") +
   xlab("Knots") +
