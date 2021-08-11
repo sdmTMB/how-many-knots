@@ -83,6 +83,29 @@ for (i in 1:nrow(df)) {
 
   haul_df <- as.data.frame(haul_new)
   mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), mesh = mesh)
+  # mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), cutoff = df$cutoff[i])
+  # mesh_sdmTMB$mesh$n
+  # 
+  # mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), cutoff = 10)
+  # m0 <- sdmTMB(present ~ 1, data = haul_df, spde = mesh_sdmTMB, family = binomial(link = "logit"), silent = FALSE)
+  # 
+  # mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), cutoff = 10)
+  # m1 <- sdmTMB(present ~ 1, data = haul_df, spde = mesh_sdmTMB, family = binomial(link = "logit"), silent = FALSE, priors = sdmTMBpriors(
+  #   matern_s = pc_matern(
+  #     range_gt = 5, range_prob = 0.05,
+  #     sigma_lt = 20, sigma_prob = 0.05
+  #   )))
+  # m1
+  # 
+  # mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), cutoff = 100)
+  # m2 <- sdmTMB(present ~ 1, data = haul_df, spde = mesh_sdmTMB, family = binomial(link = "logit"), silent = FALSE, priors = sdmTMBpriors(
+  #   matern_s = pc_matern(
+  #     range_gt = 5, range_prob = 0.05,
+  #     sigma_lt = 20, sigma_prob = 0.05
+  #   )))
+  # m1
+  # m2
+  # 
   fit <- sdmTMB::sdmTMB_cv(
     formula = present ~ 1,
     data = haul_df,
@@ -92,8 +115,8 @@ for (i in 1:nrow(df)) {
     family = binomial(link = "logit"),
     priors = sdmTMBpriors(
       matern_s = pc_matern(
-        range_gt = 1, range_prob = 0.01,
-        sigma_lt = 10, sigma_prob = 0.01
+        range_gt = 5, range_prob = 0.05,
+        sigma_lt = 20, sigma_prob = 0.05
       )
     )
   )
