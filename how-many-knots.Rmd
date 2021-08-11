@@ -48,9 +48,9 @@ By estimating values of the spatial field at the triangle vertices (or "knots"),
 There are a number of decision points to be made in constructing the mesh, including whether to include a boundary, whether the boundary is regular, the maximum edge of any triangle (in the core or boundary area), and the minimum angles allowed by the triangles [@gomez-rubio_bayesian_nodate].
 Each of these decisions can impact the density and number of small triangles that make up the mesh---and in turn, the accuracy of predictions.
 Though the mesh construction is important, this step has been omitted from best practices guides using an INLA-based approach [@thorson_guidance_2019], and we are only aware of one sensitivity analysis examining the importance of mesh construction [@righetto_choice_2020].
-While increasing the resolution of the mesh has been suggested to improve accuracy [@godana_dynamic_2019], other authors have also noted that finer meshes don't always translate into better predictions [@huang_evaluating_2017].
+While previous research has suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal_nodate; @thorson_guidance_2019], other authors have also noted that finer meshes don't always translate into better performance [@huang_evaluating_2017].
 
-The objective of this paper is to demonstrate that higher resolution spatial approximations in INLA may not translate to better predictions.
+The objective of this paper is to demonstrate that higher resolution spatial approximations in INLA may not translate to better predictive accuracy.
 Using a series of analyses on a real-world case study of groundfish data in the Northeast Pacific Ocean, we evaluate the out-of-sample predictive performance as a function of mesh resolution (number of vertices).
 We further evaluate these results across a range of cross-validation sampling schemes, including an extreme case of leave-one-out cross validation (LOOCV).
 All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (XXXX) and Zenodo (on publication).
@@ -78,7 +78,7 @@ where $\omega_{s}$ is the estimated spatial field, $B_0$ is an intercept, $u_s$ 
 All of the meshes in our analysis used a non-convex boundary and offset based on 5% of the data (Figure 1).
 We fixed the maximum edge of triangles in the mesh at 100km in the core area and 500km closer to the boundary (Figure 1).
 Throughout our analyses, we adjusted the mesh resolution by varying the cutoff distance (representing the distance where two points are treated as a single vertex) because the cutoff has been shown to have the greatest impact on measures of model performance from mesh construction [@righetto_choice_2020].
-We fit all models using R-INLA [@r_core_team_r_2021; @lindgren_bayesian_2015] and R 4.1.0 [@R2021] and specifically the 'inlabru' R package, which is a convenient wrapper for the INLA software [@bachl_inlabru_2019].
+We fit all models using R-INLA [@R2021; @lindgren_bayesian_2015] and R 4.1.0 [@R2021] and specifically the 'inlabru' R package, which is a convenient wrapper for the INLA software [@bachl_inlabru_2019].
 We used penalized complexity priors on the Matérn covariance parameters [@simpson_penalising_2015; @osgood-zimmerman_statistical_2021] with TODO (AND OTHER PRIORS).
 
 ### Sensitivities
