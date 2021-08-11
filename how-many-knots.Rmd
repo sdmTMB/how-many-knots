@@ -150,7 +150,9 @@ We recommend analysts evaluate models across a range of resolutions and carefull
 
 ![Figure 3](figures/Figure_03.jpeg) \break
 
-![Figure 4](figures/Figure_04.jpeg)
+![Figure 4](figures/Figure_04.jpeg) \break  
+
+![Figure 5](figures/Figure_05.jpeg) 
 
 \break
 

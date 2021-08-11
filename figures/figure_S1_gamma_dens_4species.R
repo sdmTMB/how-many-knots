@@ -6,7 +6,7 @@ df_gamma$species[which(df_gamma$species=="petrale sole")] = "Petrale sole"
 df_gamma$species[which(df_gamma$species=="darkblotched rockfish")] = "Darkblotched rockfish"
 df_gamma$species[which(df_gamma$species=="lingcod")] = "Lingcod"
 
-g1 = ggplot(dplyr::filter(df_gamma,n<=500), aes(n, dens_ll)) + 
+g1 = ggplot(df_gamma, aes(n, dens_ll)) + 
   geom_point(size = 3, col="darkblue",alpha=0.5) +
   #geom_smooth() + 
   theme_bw() + 
