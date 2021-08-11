@@ -58,8 +58,8 @@ for (i in 1:nrow(df)) {
   # use PC prior for matern model
   matern <-
     inla.spde2.pcmatern(mesh,
-      prior.sigma = c(10, 0.01),
-      prior.range = c(1, 0.01)
+      prior.sigma = c(5, 0.05),
+      prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
