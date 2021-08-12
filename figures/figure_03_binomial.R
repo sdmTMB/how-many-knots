@@ -5,7 +5,7 @@ df_bin <- readRDS("output/04_binomial_cv_df.rds")
 
 # first use the 10-fold mdoels to look at block effect
 df_bin$blocks <- as.factor(df_bin$blocks)
-g1 <- ggplot(dplyr::filter(df_bin), aes(n, dens_ll, group = blocks, col = blocks)) +
+g1 <- ggplot(dplyr::filter(df_bin,folds==10), aes(n, dens_ll, group = blocks, col = blocks)) +
   geom_point(size = 2, alpha = 0.5) +
   # geom_line() +
   geom_smooth(se = FALSE, method = "loess",alpha=0.5) +
@@ -14,7 +14,16 @@ g1 <- ggplot(dplyr::filter(df_bin), aes(n, dens_ll, group = blocks, col = blocks
   xlab("Knots") +
   labs(colour = "Blocks") +
   ylab("Binomial predictive density")
-g1
+
+g2 <- ggplot(dplyr::filter(df_bin,folds==40), aes(n, dens_ll, group = blocks, col = blocks)) +
+  geom_point(size = 2, alpha = 0.5) +
+  # geom_line() +
+  geom_smooth(se = FALSE, method = "loess",alpha=0.5) +
+  theme_bw() +
+  scale_color_brewer(palette = "Dark2") +
+  xlab("Knots") +
+  labs(colour = "Blocks") +
+  ylab("Binomial predictive density")
 
 pdf("figures/Figure_03.pdf")
 g1
@@ -22,4 +31,13 @@ dev.off()
 
 jpeg("figures/Figure_03.jpeg")
 g1
+dev.off()
+
+
+pdf("figures/Figure_S3.pdf")
+g2
+dev.off()
+
+jpeg("figures/Figure_S3.jpeg")
+g2
 dev.off()

@@ -161,7 +161,9 @@ We recommend analysts evaluate models across a range of resolutions and carefull
 \break
 
 ![Figure S2](figures/Figure_S2.jpeg)
+\break
 
+![Figure S3](figures/Figure_S3.jpeg)
 \break
 
 # References
