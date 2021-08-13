@@ -10,7 +10,7 @@ loocv = dplyr::group_by(df_bin, holdout) %>%
   dplyr::group_by(cutoff) %>%
   dplyr::summarize(dens = sum(dens_ll),n=n[1])
 
-cpo = dplyr::filter(cpo, cutoff>=15, cutoff<=75) %>%
+cpo = dplyr::filter(cpo, cutoff>=5, cutoff<=75) %>%
   dplyr::select(-dic) %>% 
   dplyr::rename(dens = log_cpo)
 

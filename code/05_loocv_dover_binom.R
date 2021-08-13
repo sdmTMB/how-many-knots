@@ -22,7 +22,7 @@ coordinates(dover) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = c(15, 20, 25, 30, 50, 75),
+  "cutoff" = c(10,15, 20, 25, 30, 50, 75),
   "holdout" = seq(1, nrow(dover)),
   "n" = NA,
   "dens_ll" = NA

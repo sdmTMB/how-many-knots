@@ -33,7 +33,7 @@ coordinates(dover) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- data.frame(
-  "cutoff" = seq(5, 100, by = 5),
+  "cutoff" = c(6,7,8, seq(5,100,by=5)),
   "n" = NA,
   "log_cpo" = NA,
   "dic" = NA

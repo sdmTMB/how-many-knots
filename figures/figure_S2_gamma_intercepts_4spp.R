@@ -2,9 +2,9 @@ library(ggplot2)
 df = readRDS("output/df_gamma_catchrates_4sp.rds")
 
 df$species = as.character(df$species)
-df$species[which(df$species=="dover sole")] = "Dover sole"
-df$species[which(df$species=="petrale sole")] = "Petrale sole"
-df$species[which(df$species=="darkblotched rockfish")] = "Darkblotched rockfish"
+df$species[which(df$species=="dover sole")] = "Dover Sole"
+df$species[which(df$species=="petrale sole")] = "Petrale Sole"
+df$species[which(df$species=="darkblotched rockfish")] = "Darkblotched Rockfish"
 df$species[which(df$species=="lingcod")] = "Lingcod"
 
 

@@ -2,9 +2,9 @@ library(ggplot2)
 df_bin = readRDS("output/02_binom_dens_4species.rds")
 
 df_bin$species = as.character(df_bin$species)
-df_bin$species[which(df_bin$species=="dover sole")] = "Dover sole"
-df_bin$species[which(df_bin$species=="petrale sole")] = "Petrale sole"
-df_bin$species[which(df_bin$species=="darkblotched rockfish")] = "Darkblotched rockfish"
+df_bin$species[which(df_bin$species=="dover sole")] = "Dover Sole"
+df_bin$species[which(df_bin$species=="petrale sole")] = "Petrale Sole"
+df_bin$species[which(df_bin$species=="darkblotched rockfish")] = "Darkblotched Rockfish"
 df_bin$species[which(df_bin$species=="lingcod")] = "Lingcod"
 
 g1 = ggplot(df_bin, aes(n, dens_ll)) + 

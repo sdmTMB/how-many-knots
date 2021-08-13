@@ -1,9 +1,9 @@
 library(ggplot2)
 df_gamma = readRDS("output/03_gamma_dens_4species.rds")
 df_gamma$species = as.character(df_gamma$species)
-df_gamma$species[which(df_gamma$species=="dover sole")] = "Dover sole"
-df_gamma$species[which(df_gamma$species=="petrale sole")] = "Petrale sole"
-df_gamma$species[which(df_gamma$species=="darkblotched rockfish")] = "Darkblotched rockfish"
+df_gamma$species[which(df_gamma$species=="dover sole")] = "Dover Sole"
+df_gamma$species[which(df_gamma$species=="petrale sole")] = "Petrale Sole"
+df_gamma$species[which(df_gamma$species=="darkblotched rockfish")] = "Darkblotched Rockfish"
 df_gamma$species[which(df_gamma$species=="lingcod")] = "Lingcod"
 
 g1 = ggplot(df_gamma, aes(n, dens_ll)) + 
