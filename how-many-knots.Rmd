@@ -141,9 +141,13 @@ TODO (WORK IN SDMTMB COMPARISON)
 Larger meshes aren't necessarily better.
 Others have pointed this out, [@huang_evaluating_2017], but it gets overlooked
 
-Selecting the location and number of knots isn't unique to INLA based models -- other examples include GP models [@banerjee2013; @garton2020]
+Selecting the location and number of knots isn't unique to INLA based models -- other examples include GP models [@banerjee2013; @garton2020] or P-splines [@ruppert2002]
 
 Rules of thumb? This is tricky because it's somewhat dataset specific. The blockCV MEE paper suggests defining spatial blocks based on residual spatial autocorrelation -- which involves fitting the model, so somewhat circular [and tools like calculating the variogram are made difficult by non-normal response data]. Most advanced GP approaches include knot selection as a parameter, or do an adaptive grid search
+
+The number of knots needed to generate a model with high predictive accuracy depends on the other features of the model. Some of this is based on data (e.g. homogenous spp like Dover sole vs patchily distributed rockfish), but a lot of this is dependent on how much variation is parsed into observation error. High obs errors will result in flatter spatial fields, which will require fewer knots. 
+
+Make bridge with GAMs. GAMs allow for a flexible range of smoothing functions, including gaussian processes with the Matern covariance. [@miller2020; @yue2014] did a great job linking these and showing the common interpretations between SPDEs and smoothing splines. One option would be to use GAMs to compare alternative meshes / numbers of knots, but that begs the question why we aren't just doing this in mgcv in the first place. 
 
 Sub-optimal meshes are likely to have an impact on derived things we care about, like indices of abundance -- both bias and precision, fig s2
 

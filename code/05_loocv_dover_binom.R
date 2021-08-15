@@ -54,7 +54,7 @@ for (i in 1:nrow(df)) {
     )
   # components is equivalent to formula
   components <- present ~ Intercept + field(
-    map = coordinates,
+    main = coordinates,
     model = matern
   )
 

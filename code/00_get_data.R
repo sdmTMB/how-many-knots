@@ -71,3 +71,16 @@ sub <- dplyr::filter(catch, common_name %in% c(
   "lingcod"
 ))
 saveRDS(sub, "data/catch_cleaned.rds")
+
+
+
+# top_spp <-
+#   dplyr::group_by(catch, common_name) %>%
+#   dplyr::summarise(m = sum(cpue_kg_km2)) %>%
+#   dplyr::arrange(-m) %>%
+#   dplyr::filter(!is.na(common_name))
+# 
+# sub = dplyr::filter(catch, common_name %in% top_spp$common_name[1:30]) %>%
+#   dplyr::filter(common_name %in% c("crushed urchin","Mud Urchin","Red Star")==FALSE)
+
+# saveRDS(sub, "data/catch_cleaned_top50.rds")
