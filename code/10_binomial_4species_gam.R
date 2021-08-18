@@ -25,6 +25,7 @@ df <- expand.grid(
 )
 
 set.seed(2021)
+use_reml = TRUE
 
 for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
@@ -102,10 +103,16 @@ for (i in 1:nrow(df)) {
   
   for (k in 1:max(haul_new$fold)) {
     fit_train <- mgcv::gam(present ~ s(X,Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
-               data = haul_new,
-               family=binomial(),
-               control =  gam.control(scalePenalty = FALSE),
-               method = "REML")
+                           data = haul_new,
+                           family=binomial(),
+                           method = ifelse("use_reml"==TRUE,"REML","ML"),
+                           control =  gam.control(scalePenalty = FALSE))
+    
+      # fit_train <- mgcv::gam(present ~ s(X,Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
+      #          data = haul_new,
+      #          family=binomial(),
+      #          control =  gam.control(scalePenalty = FALSE),
+      #          method = "REML")
     
     test_indx <- which(haul_new$fold == k)
     # if model didn't have problems
