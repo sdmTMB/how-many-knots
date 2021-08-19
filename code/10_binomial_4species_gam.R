@@ -25,7 +25,9 @@ df <- expand.grid(
 )
 
 set.seed(2021)
-use_reml = TRUE
+use_reml = FALSE
+# Source David Miller's code
+source("code/mgcv_spde_smooth.R")
 
 for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])

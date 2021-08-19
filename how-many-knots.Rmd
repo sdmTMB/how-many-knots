@@ -1,6 +1,6 @@
 ---
 title: Too many knots
-author: 
+author: Eric J. Ward$^{1,\dagger}$, Sean C. Anderson$^{2,\dagger}$
 output:
   pdf_document:
     fig_caption: yes
@@ -17,6 +17,11 @@ editor_options:
 bibliography: how-many-knots.bib
 ---
 
+$^1$Conservation Biology Division, Northwest Fisheries Science Center, National Marine Fisheries Service, National Oceanic and Atmospheric Administration, 2725 Montlake Blvd E, Seattle WA, 98112, USA\
+email: eric.ward@noaa.gov  
+$^2$Pacific Biological Station, Fisheries and Oceans Canada, Nanaimo, BC, V6T 6N7, Canada  
+$^\dagger$ Authors contributed equally to this work    
+
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE, tidy=FALSE, tidy.opts=list(width.cutoff=60), warning = FALSE, message = FALSE)
 library(knitr)
@@ -24,6 +29,7 @@ library(ggrepel)
 library(viridis)
 library(gridExtra)
 library(cowplot)
+library(jpeg)
 ```
 
 ## Abstract
@@ -31,9 +37,9 @@ library(cowplot)
 
 1. Spatial and spatiotemporal models are seeing increasingly used in ecology and related fields to model latent distributions. Applications relying on these methods have used them to track population change over time, assess changing species distributions, and model spatial population processes (predation, habitat use, fishing impacts, etc). 
 
-2. Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Integrated Nested Laplace Approximation (INLA). One of the most critical decisions for building INLA--based models is how to construct the spatial approximation ("mesh"). Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance. Using a publicly available dataset on commercially fished species on the west coast of the USA, we develop spatial models of species occurrence and catch rates for 4 species. We conduct a series of sensitivity analyses, across We examine the sensitivity of mesh resolution to explain the occurrence and catch rates, across a range of mesh features (resolution, spatial cross validation).  
+2. Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Integrated Nested Laplace Approximation (INLA). One of the most critical decisions for building INLA--based models is how to construct the spatial approximation ("mesh"). Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance. Using a publicly available dataset on commercially fished species on the west coast of the USA, we develop spatial models of species occurrence and catch rates for 4 species. We conduct a series of sensitivity analyses to understand how mesh resolution affects the predictive accuracy of models predicting species occurrences and catch rates. 
 
-3. Our results highlight that for both presence-absence and positive (Gamma) models, the finest scale spatial approximations considered overfit the data and resulted in decreased out of sample predictive performance. For each of the species and models considered, there appeared to be an optimal range of vertices (knot) used in constructing the spatial approximation. These results held across a range of spatial cross-validation sampling schemes, including folds selected in 1-dimensional latitudinal blocks, and the use of 2-dimensional spatial blocks.
+3. Our results highlight that for both presence-absence (binomial) and positive (Gamma) models, the finest scale spatial approximations considered overfit the data and resulted in decreased out of sample predictive performance. For each of the species and models considered, there appeared to be an optimal range of vertices (knots) used in constructing the spatial approximation. These results held across a range of spatial cross-validation sampling schemes, including folds selected in 1-dimensional latitudinal blocks, and the use of 2-dimensional spatial blocks.
 
 4. Results from our work highlight that practicioners should not assume that the performance of INLA--based models gets better with higher resolution. Instead, each dataset likely has a range of resolutions that is optimal, and these optimal ranges may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis. Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (estimates of populaiton abundance, distribution, etc.). 
 
@@ -119,12 +125,9 @@ Previous research has shown that the CPO approximation performs similarly to MCM
 Focusing on the presence-absence model of Dover Sole (Figure 2), we first calculated the total CPO score across a range of cutoff values.
 For comparison, we then calculated the true predictive density using LOOCV across a similar range of cutoffs (fitting the INLA model 702 times for each value of the range).
 
-TODO (WORK IN SDMTMB COMPARISON)  
+As a final sensitivity, we compared parameter estimation using INLA to estimation of the same models using TMB [@kristensen_tmb_2016]. Specifically, we performed estimation using the R package 'sdmTMB' [@anderson2019], which uses the INLA software to create meshes, but takes advantage of autodifferentiation in TMB for faster parameter estimation.
 
 ## Results
-
-Fig.
-1 just demonstrates the data used in the study, and a couple mesh configurations (coarse and fine, cutoff of 80 and 20, translating to 110 and 394 knots)
 
 Our initial results fitting the binomial and Gamma models across a range of species and mesh cutoff values demonstrated that after some optimal spatial cutoff of triangles in the mesh, predictive accuracy of the spatial models deteriorated as mesh resolution was increased. Binomial models of Darkblotched Rockfish (Fig. 2) and Gamma models for all species also supported a decline in performance with the coarsest mesh resolutions (Fig. S1). The binomial sub-model suggested that the optimal number of knots was 200--250 (Fig. 2), and the positive Gamma sub-model indicated even smaller knot values had nearly equivalent out of sample predictive performance (Fig. S1). 
 
@@ -168,27 +171,65 @@ Sub-optimal meshes are likely to have an impact on derived things we care about,
 
 ## Figures
 
-![Figure 1](figures/Figure_01.jpeg) \break
+```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively."}
+source("figures/figure_01_mesh.r")
+gridExtra::grid.arrange(p2,p1,nrow=1)
+```
 
-![Figure 2](figures/Figure_02.jpeg) \break
+\break  
 
-![Figure 3](figures/Figure_03.jpeg) \break
+```{r fig2, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
+source("figures/figure_02_binom_dens_4species.R")
+g1
+```
 
-![Figure 4](figures/Figure_04.jpeg) \break  
+\break  
+```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios."}
+source("figures/figure_03_binomial.R")
+g1
+```
 
-![Figure 5](figures/Figure_05.jpeg) 
+\break  
+
+```{r fig4, echo=FALSE, fig.cap = "Comparison of CPO and LOOCV for the binomial presence-absence model of Dover sole. A wider range of cutoff values is shown for CPO (5-100km) than LOOCV (10-75km) to reduce computational time."}
+source("figures/figure_04_loocv_v_cpo.R")
+g1
+```
+
+\break  
+
+```{r fig5, echo=FALSE, fig.cap = "Estimates of the Matern range and spatial scale, along with standard deviations for each parameter, across four species in the WCBTS survey. Cutoff values from 3-120km are shown. ", fig.height=7}
+source("figures/figure_05_range_v_knots.R")
+gridExtra::grid.arrange(g1,g2,g3,g4,ncol=1)
+```
 
 \break
 
-![Figure S1](figures/Figure_S1.jpeg)
+```{r fig-s1, echo=FALSE, fig.cap = "Gamma predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
+source("figures/figure_S1_gamma_dens_4species.R")
+g1
+```
 
 \break
 
-![Figure S2](figures/Figure_S2.jpeg)
+```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)"}
+source("figures/figure_S2_gamma_intercepts_4spp.R")
+g1
+```
+
 \break
 
-![Figure S3](figures/Figure_S3.jpeg)  
+```{r fig-s3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 40-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios."}
+source("figures/figure_03_binomial.R")
+g2
+```
 
+\break  
+
+```{r fig-s4, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA."}
+source("figures/figure_tmb_binom.R")
+g1
+```
 
 \break  
 
