@@ -1,5 +1,5 @@
 ---
-title: Too many knots
+title: Approximating spatial processes with too many knots degrades predictive accuracy of SPDE models
 author: Eric J. Ward$^{1,\dagger}$, Sean C. Anderson$^{2,\dagger}$
 output:
   pdf_document:
