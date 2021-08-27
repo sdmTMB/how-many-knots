@@ -17,7 +17,7 @@ haul <- haul %>%
     !is.na(longitude_dd), !is.na(latitude_dd),
     performance == "Satisfactory"
   ) %>%
-  dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m)
+  dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m,temperature_at_gear_c_der)
 
 haul_trans <- haul
 coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")

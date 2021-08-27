@@ -1,5 +1,5 @@
 library(ggplot2)
-df_bin <- readRDS("output/08_binom_dens_4species_TMB.rds")
+df_bin <- readRDS("output/10_binom_dens_4species.rds")
 
 df_bin$species <- as.character(df_bin$species)
 df_bin$species[which(df_bin$species == "dover sole")] <- "Dover sole"
