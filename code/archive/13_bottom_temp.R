@@ -18,46 +18,44 @@ catch <- readRDS("data/catch_cleaned.rds")
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
   "blocks" = c(10),
-  "species" = c(
-    "Dover sole", "petrale sole", "darkblotched rockfish",
-    "lingcod"
-  ),
   "n" = NA,
-  "dens_ll" = NA
+  "dens_ll" = NA,
+  "species" = "Dover sole"
 )
 
 set.seed(2021)
 
-for (i in 1:nrow(df)) {
+for (i in 14:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
-
+  
   # Join catch and haul data
   haul_new <- haul %>%
     left_join(catch_sub, by = "trawl_id") %>%
     select(trawl_id, X, Y,
-      latitude = latitude_dd.x,
-      longitude = longitude_dd.x,
-      year = year,
-      log_depth_scaled,
-      log_depth_scaled2,
-      cpue_kg_km2
+           latitude = latitude_dd.x,
+           longitude = longitude_dd.x,
+           year = year,
+           log_depth_scaled,
+           log_depth_scaled2,
+           cpue_kg_km2,
+           temperature_at_gear_c_der
     )
   # Set NA CPUEs to 0
-  haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
-  haul_new <- dplyr::filter(haul_new, cpue_kg_km2 > 0)
-
+  #haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
+  haul_new <- dplyr::filter(haul_new, 
+                            !is.na(temperature_at_gear_c_der))
   # convert coordinates to km
   haul_new$X <- haul_new$X / 1000
   haul_new$Y <- haul_new$Y / 1000
   # create occurrence field
-  # haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
+  haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
   coordinates(haul_new) <- c("X", "Y")
-
+  
   # create boundary, same for all meshes
   boundary <- inla.nonconvex.hull(coordinates(haul_new),
-    convex = -0.05
+                                  convex = -0.05
   )
-
+  
   n_folds <- 10
   n_blocks <- df$blocks[i]
   # first assign blocks
@@ -74,7 +72,7 @@ for (i in 1:nrow(df)) {
   haul_new <- dplyr::left_join(as.data.frame(haul_new), block_fold)
   # return to SpatialPointsDataFrame
   coordinates(haul_new) <- c("X", "Y")
-
+  
   # create mesh
   mesh <- inla.mesh.2d(
     loc = coordinates(haul_new),
@@ -94,7 +92,7 @@ for (i in 1:nrow(df)) {
                         prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
-  components <- cpue_kg_km2 ~ Intercept + field(
+  components <- temperature_at_gear_c_der ~ Intercept + field(
     main = coordinates,
     model = matern
   )
@@ -105,7 +103,7 @@ for (i in 1:nrow(df)) {
   for (k in 1:max(haul_new$fold)) {
     fit_train <- try(bru(components,
       haul_new[which(haul_new$fold != k), ],
-      family = "gamma"
+      family = "gaussian"
     ), silent = TRUE)
     test_indx <- which(haul_new$fold == k)
     # if model didn't have problems
@@ -122,17 +120,15 @@ for (i in 1:nrow(df)) {
       }
     }
     # get precision parameter for the Gamma observations
-    gamma_prec <- fit_train$summary.hyperpar$mean[1]
-    # evaluate gamma likelihood for this fold
-    # gamma_shape = gamma_prec
-    # gamma_scale = mu / gamma_prec
-    fold_ll[k] <- sum(dgamma(haul_new$cpue_kg_km2[test_indx],
-      shape = gamma_prec,
-      scale = exp(haul_new$pred[test_indx]) / gamma_prec,
+    tau <- fit_train$summary.hyperpar$mean[1]
+    
+    fold_ll[k] <- sum(dnorm(haul_new$temperature_at_gear_c_der[test_indx],
+      mean = haul_new$pred[test_indx],
+      sd = sqrt(1/tau),
       log = TRUE
     ))
   }
   # calculate total log density
   df$dens_ll[i] <- sum(fold_ll)
-  saveRDS(df, file = "output/03_gamma_dens_4species.rds")
+  saveRDS(df, file = "output/13_norm_dens_temp.rds")
 }
