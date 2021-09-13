@@ -17,7 +17,7 @@ catch <- readRDS("data/catch_cleaned.rds")
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(10),
+  "blocks" = 10,
   "n" = NA,
   "dens_ll" = NA,
   "species" = "Dover sole"
@@ -25,7 +25,7 @@ df <- expand.grid(
 
 set.seed(2021)
 
-for (i in 14:nrow(df)) {
+for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
   
   # Join catch and haul data
