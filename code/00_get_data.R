@@ -54,7 +54,8 @@ haul_new <- haul %>%
     year = year,
     log_depth_scaled,
     log_depth_scaled2,
-    cpue_kg_km2
+    cpue_kg_km2,
+    temperature_at_gear_c_der
   )
 # Set NA CPUEs to 0
 haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
