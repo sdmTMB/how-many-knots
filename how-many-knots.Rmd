@@ -165,7 +165,9 @@ Make bridge with GAMs. GAMs allow for a flexible range of smoothing functions, i
 Sub-optimal meshes are likely to have an impact on derived things we care about, like indices of abundance -- both bias and precision, fig s2
 
 
+## Acknowledgements
 
+We would like to express our gratitude to Dave Miller and Andy Seaton for helpful comments that improved our analysis and presentation of results. 
 
 \break
 
@@ -180,7 +182,7 @@ gridExtra::grid.arrange(p2,p1,nrow=1)
 
 ```{r fig2, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
 source("figures/figure_02_binom_dens_4species.R")
-g1
+gridExtra::grid.arrange(g1,g2)
 ```
 
 \break  
@@ -207,7 +209,7 @@ gridExtra::grid.arrange(g1,g2,g3,g4,ncol=1)
 
 ```{r fig-s1, echo=FALSE, fig.cap = "Gamma predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
 source("figures/figure_S1_gamma_dens_4species.R")
-g1
+gridExtra::grid.arrange(g1,g2)
 ```
 
 \break
