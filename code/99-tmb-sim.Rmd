@@ -1,0 +1,127 @@
+---
+title: SPDE meshes and degraded predictions at high resolutions (with TMB)
+author: Sean Anderson, Eric Ward
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(sdmTMB)
+library(dplyr)
+library(future)
+# plan(sequential)
+plan(multisession)
+```
+
+Simulate some data:
+
+```{r sim-data, cache=TRUE}
+set.seed(1298)
+x <- runif(500, -1, 1)
+y <- runif(500, -1, 1)
+N <- length(x)
+plot(x, y)
+time_steps <- 1
+X <- model.matrix(~ x1, data.frame(x1 = rnorm(N * time_steps)))
+head(X)
+loc <- data.frame(x = x, y = y)
+mesh <- make_mesh(loc, xy_cols = c("x", "y"), cutoff = 0.1)
+s <- sdmTMB_sim(
+  x = x, y = y, mesh = mesh, X = X,
+  betas = c(0.2, 0.3), time_steps = time_steps,
+  phi = 0.2, thetaf = 1.3, range = 0.2, sigma_O = 0.4,
+  seed = 1234, family = gaussian()
+)
+head(s)
+```
+
+```{r}
+ggplot(s, aes(x, y, colour = observed, size = abs(observed))) + 
+  geom_point() +
+  scale_color_gradient2() +
+  scale_size_area()
+```
+
+Fit an 8-fold cross validation across a sequence of INLA mesh `cutoff` values i.e., smaller cutoff = higher resolution mesh:
+
+```{r tmb-sim-fits, cache=TRUE, message=FALSE, warning=FALSE}
+cutoffs <- c(0.5, 0.3, 0.2, 0.1, 0.05, 0.02, 0.01)
+mcv <- lapply(cutoffs, function(k) {
+  cat("Cutoff:", k, "\n")
+  mesh <- make_mesh(s, c("x", "y"), cutoff = k)
+  cat("Mesh n:", mesh$mesh$n, "\n")
+  set.seed(123)
+  sdmTMB_cv(
+    observed ~ 1 + x1,
+    data = s,
+    silent = TRUE,
+    parallel = TRUE,
+    # priors = sdmTMBpriors(matern_s = pc_matern(range_gt = 0.05, sigma_lt = 1)),
+    mesh_args = list(cutoff = k, xy_cols = c("x", "y")),
+    family = gaussian(),
+    k_folds = 8L
+  )
+})
+```
+
+```{r}
+lls <- purrr::map_dbl(mcv, "sum_loglik")
+# `vert` = vertices
+vert <- purrr::map_dbl(mcv, function(x) x$models[[1]]$spde$mesh$n)
+```
+
+```{r}
+plot(cutoffs, lls, type = "o")
+plot(vert, lls, type = "o")
+```
+
+What about the 'in-bag' data for each fold?
+  
+```{r}
+in_bag <- purrr::map_dfr(mcv, function(x) {
+  nll <- purrr::map_dbl(seq_along(x$models), 
+    function(i) x$models[[i]]$model$objective)
+  tibble(ll = -nll, cv_id = seq_along(nll))
+}, .id = "cutoff_id")
+left_join(in_bag, tibble(cutoff_id = as.character(seq_along(vert)), 
+  vertices = vert)) %>% 
+  ggplot(aes(vertices, ll, group = cv_id, colour = as.factor(cv_id))) + 
+  geom_line()
+```
+
+Extract spatial random fields and predictions for first fold. x1 is just random here.
+
+```{r tmb-sim-preds, cache=TRUE}
+nd <- expand.grid(x = seq(-1, 1, length.out = 100), 
+  y = seq(-1, 1, length.out = 100))
+nd$x1 <- rnorm(nrow(nd))
+p <- purrr::map_dfr(seq_along(mcv), function(i) {
+  p <- predict(mcv[[i]]$models[[1]], newdata = nd)
+  p$cutoff <- cutoffs[i]
+  p$vertices <- mcv[[i]]$models[[1]]$spde$mesh$n
+  p$cv_log_lik <- mcv[[i]]$sum_loglik
+  p
+})
+p <- group_by(p, cutoff) %>%
+  mutate(ll_relative = cv_log_lik - max(p$cv_log_lik))
+p$meta <- paste0("Vert.: ", stringr::str_pad(p$vertices, 3L), ", ",
+  "CV LL: ", round(p$ll_relative, 2))
+p$meta2 <- paste0("Cut.: ", stringr::str_pad(p$cutoff, 2L, "right"), ", ",
+  "CV LL: ", round(p$ll_relative, 2))
+```
+
+Note the LL is relative here so that 0 is the highest:
+
+```{r, fig.width=8, fig.height=8}
+ggplot(p, aes(x, y, fill = omega_s)) +
+  geom_raster() +
+  scale_fill_gradient2() +
+  facet_wrap(~meta) +
+  coord_fixed(expand = FALSE) +
+  ggtitle("Estimated spatial random field")
+
+ggplot(p, aes(x, y, fill = est)) +
+  geom_raster() +
+  scale_fill_viridis_c() +
+  facet_wrap(~meta) +
+  coord_fixed(expand = FALSE) +
+  ggtitle("Predicted value")
