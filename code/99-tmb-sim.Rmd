@@ -15,18 +15,16 @@ plan(multisession)
 Simulate some data:
 
 ```{r sim-data, cache=TRUE}
-set.seed(1298)
-x <- runif(500, -1, 1)
-y <- runif(500, -1, 1)
-N <- length(x)
-plot(x, y)
+x <- seq(-1, 1, length.out = 150)
+y <- seq(-1, 1, length.out = 150)
+loc <- expand.grid(x = x, y = y)
 time_steps <- 1
+N <- nrow(loc)
 X <- model.matrix(~ x1, data.frame(x1 = rnorm(N * time_steps)))
-head(X)
-loc <- data.frame(x = x, y = y)
 mesh <- make_mesh(loc, xy_cols = c("x", "y"), cutoff = 0.1)
+plot(mesh$mesh, asp = 1, main = "")
 s <- sdmTMB_sim(
-  x = x, y = y, mesh = mesh, X = X,
+  x = loc$x, y = loc$y, mesh = mesh, X = X,
   betas = c(0.2, 0.3), time_steps = time_steps,
   phi = 0.2, thetaf = 1.3, range = 0.2, sigma_O = 0.4,
   seed = 1234, family = gaussian()
@@ -34,8 +32,30 @@ s <- sdmTMB_sim(
 head(s)
 ```
 
+Look at simulated data.
+
+True response:
+
 ```{r}
-ggplot(s, aes(x, y, colour = observed, size = abs(observed))) + 
+ggplot(s, aes(x, y, fill = mu))+ 
+  geom_raster() +
+  scale_fill_viridis_c()
+```
+
+True spatial random field:
+
+```{r}
+ggplot(s, aes(x, y, fill = omega_s))+ 
+  geom_raster() +
+  scale_fill_gradient2()
+```
+
+Sample 500 points to observe:
+
+```{r}
+set.seed(1029)
+d <- s[sample(seq_len(nrow(loc)), 500), ]
+ggplot(d, aes(x, y, colour = observed, size = abs(observed))) + 
   geom_point() +
   scale_color_gradient2() +
   scale_size_area()
@@ -52,7 +72,7 @@ mcv <- lapply(cutoffs, function(k) {
   set.seed(123)
   sdmTMB_cv(
     observed ~ 1 + x1,
-    data = s,
+    data = d,
     silent = TRUE,
     parallel = TRUE,
     # priors = sdmTMBpriors(matern_s = pc_matern(range_gt = 0.05, sigma_lt = 1)),
@@ -88,12 +108,12 @@ left_join(in_bag, tibble(cutoff_id = as.character(seq_along(vert)),
   geom_line()
 ```
 
-Extract spatial random fields and predictions for first fold. x1 is just random here.
+Extract spatial random fields and predictions for first fold.
 
 ```{r tmb-sim-preds, cache=TRUE}
-nd <- expand.grid(x = seq(-1, 1, length.out = 100), 
-  y = seq(-1, 1, length.out = 100))
-nd$x1 <- rnorm(nrow(nd))
+nd <- expand.grid(x = seq(-1, 1, length.out = 150), 
+  y = seq(-1, 1, length.out = 150))
+nd$x1 <- s$x1
 p <- purrr::map_dfr(seq_along(mcv), function(i) {
   p <- predict(mcv[[i]]$models[[1]], newdata = nd)
   p$cutoff <- cutoffs[i]
@@ -109,7 +129,9 @@ p$meta2 <- paste0("Cut.: ", stringr::str_pad(p$cutoff, 2L, "right"), ", ",
   "CV LL: ", round(p$ll_relative, 2))
 ```
 
-Note the LL is relative here so that 0 is the highest:
+Note the log likelihood (LL) is relative here so that 0 is the highest.
+
+Predictions from 1st fold:
 
 ```{r, fig.width=8, fig.height=8}
 ggplot(p, aes(x, y, fill = omega_s)) +
@@ -118,10 +140,35 @@ ggplot(p, aes(x, y, fill = omega_s)) +
   facet_wrap(~meta) +
   coord_fixed(expand = FALSE) +
   ggtitle("Estimated spatial random field")
+```
 
+Truth:
+
+```{r}
+ggplot(s, aes(x, y, fill = omega_s))+ 
+  geom_raster() +
+  scale_fill_gradient2() +
+  coord_fixed(expand = FALSE)
+```
+
+Predictions from 1st fold:
+
+```{r, fig.width=8, fig.height=8}
 ggplot(p, aes(x, y, fill = est)) +
   geom_raster() +
   scale_fill_viridis_c() +
   facet_wrap(~meta) +
   coord_fixed(expand = FALSE) +
   ggtitle("Predicted value")
+```
+
+Truth:
+
+```{r}
+ggplot(s, aes(x, y, fill = mu)) +
+  geom_raster() +
+  scale_fill_viridis_c() +
+  coord_fixed(expand = FALSE)
+```
+
+
