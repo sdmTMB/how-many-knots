@@ -54,7 +54,7 @@ Motivating questions for these applications to large georeferenced datasets incl
 There are a number of statistical approaches for developing models with spatial components; examples include generalized additive models (GAMs) [@forney_habitat-based_2012; @murase_application_2009], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@datta_hierarchical_2016; @latimer_hierarchical_2009].
 Advances by @rue_approximate_2009 have enabled the development of the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields.
 These models have been extended to include the ability to fit geographic barriers, such as islands or lakes, anisotropic covariance functions, and non-Gaussian data [@bakka_spatial_2018].
-In addition to estimating Bayesian posterior distributions [@lindgren_bayesian_2015], INLA has been integrated with Template Model Builder (TMB; [@kristensen_tmb_2016; @osgood-zimmerman_statistical_2021]) to enable auto-differentiation and has been adopted in many spatial fisheries applications around the world [e.g., @johnson_investigating_2019; @thorson_measuring_2019].
+In addition to estimating Bayesian posterior distributions [@lindgren_bayesian_2015], INLA has been integrated with Template Model Builder (TMB; [@kristensen_tmb_2016; @osgood-zimmerman_statistical_2021]) to enable auto-differentiation and has been adopted in many spatial fisheries applications around the world [e.g., @johnson_investigating_2019; @thorson_measuring_2019; @anderson2019synopsis].
 
 Constructing spatiotemporal models with INLA or related software involves many of the same considerations as with simpler non-spatial models.
 For example, modelers frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?" Spatial or spatiotemporal models may include additional considerations, such as specifying the form of spatiotemporal variation [@anderson_black_2019].
@@ -62,14 +62,14 @@ One of the more complicated and important decisions---particularly for INLA base
 Unlike Generalized Additive Models (GAMs), which often penalize smooth terms [@wood2003], penalties in overfitting INLA models are not as apparent.
 
 One of the first steps in fitting a model with INLA involves choosing the appropriate resolution of the spatial field using a "mesh" (a map consisting of small triangles, e.g., Figure 1).
-By estimating values of the spatial field at the triangle vertices (or "knots"), the spatial field may be triangulated to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
+By estimating values of the spatial field at the vertices (or "knots"), the spatial field may be triangulated to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
 There are a number of decision points to be made in constructing the mesh, including whether to include a boundary, whether the boundary is regular, the maximum edge of any triangle (in the core or boundary area), and the minimum angles allowed by the triangles [@gomez-rubio_bayesian_nodate].
 Each of these decisions can impact the density and number of small triangles that make up the mesh---and in turn, the accuracy of predictions.
 Though the mesh construction is important, this step has been omitted from best practices guides using an INLA-based approach [@thorson_guidance_2019], and we are only aware of one sensitivity analysis examining the importance of mesh construction [@righetto_choice_2020].
 While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal_nodate; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes don't always translate into better performance [@huang_evaluating_2017].
 
 The objective of this paper is to examine whether higher resolution spatial approximations in INLA translate to better predictive accuracy.
-Using a series of analyses on a real-world case study of groundfishes in the Northeast Pacific Ocean, we evaluate the out-of-sample predictive performance as a function of mesh resolution (number of knots). We further evaluate these results across a range of cross-validation sampling schemes (number of spatial blocks and folds), including an extreme case of leave-one-out cross validation (LOOCV).
+Using a series of analyses on a real-world case study of groundfishes in the Northeast Pacific Ocean, we evaluate the out of sample predictive performance as a function of mesh resolution (number of knots). We further evaluate these results across a range of cross-validation sampling schemes (number of spatial blocks and folds), including an extreme case of leave-one-out cross validation (LOOCV).
 All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (XXXX) and Zenodo (on publication).
 
 ## Methods
@@ -109,14 +109,14 @@ To evaluate model performance, we conducted 10-fold cross-validation.
 Though not a 1-dimensional dataset, the strong latitudinal gradient has driven spatial stratification in previous analyses [@keller_northwest_2017] (Figure 1).
 We a priori divided the survey domain into 10 spatial blocks by latitude quantiles with approximately the same number of points in each box (the latitudinal mean distance of each box was 178.1km, $\sigma$=56.2).
 Each model was run using inlabru [\@ @bachl_inlabru_2019], and the fit to each set of training data was used to predict observations in the held out block. 
-The predictive density was calculated using the binomial or Gamma densities, and total predictive densities were calculated by summing across folds.
+The predictive density was calculated using the binomial or Gamma densities, and total predictive densities were calculated by summing across folds. To contrast the out of sample predictive performance with fit to the training data, we also calculated the predictive density of the training data, separately for each fold.
 
 As a second sensitivity, we evaluated whether the 1-dimensional  cross-validation sampling may influence inference about predictive ability.
 Recent work has demonstrated that for spatially structured data, creating random folds that ignore spatial autocorrelation may bias results [@valavi_blockcv_2019].
 Using the presence-absence data from Dover Sole, we examined the cross validation performance across a range of mesh resolutions (cutoff values ranging from 3--120, or 75--1348 knots), number of spatial blocks (19--218) and number of folds used for cross validation (10, 40).
-Selection of spatial blocks was done using the 'blockCV' package in R [@valavi_blockcv_2019] with varying distance bands between test and training sets (25--150km).
+Selection of spatial blocks was done using the 'blockCV' package in R [@valavi_blockcv_2019] with varying distance bands between test and training sets (25--150km). These bands are used to create buffers around test data, with larger bands creating more separation between test and training data. 
 
-To further validate the inference from the spatial cross-validation, we examined the performance of out-of-sample approximations in INLA.
+To further validate the inference from the spatial cross-validation, we examined the performance of alternative measures of out of sample predictive performance.
 We focused on the conditional predictive ordinate (CPO, [@pettit1990]), which is an approximation to the leave-one-out cross-validation score (LOOCV).
 Ideally, we would use cross validation to evaluate the out of sample predictive accuracy of a model.
 The total predictive log density can be represented as the sum of individual log posterior probabilities, $\sum_{i=1}^{n} \log[P(Y_{i}|Y_{\neq i})]$, where $P(Y_{i}|Y_{\neq i})$ is the probability of test data $i$.
@@ -129,7 +129,7 @@ As a final sensitivity, we compared parameter estimation using INLA to estimatio
 
 ## Results
 
-Our initial results fitting the binomial and Gamma models across a range of species and mesh cutoff values demonstrated that after some optimal spatial cutoff of triangles in the mesh, predictive accuracy of the spatial models deteriorated as mesh resolution was increased. Binomial models of Darkblotched Rockfish (Fig. 2) and Gamma models for all species also supported a decline in performance with the coarsest mesh resolutions (Fig. S1). The binomial sub-model suggested that the optimal number of knots was 200--250 (Fig. 2), and the positive Gamma sub-model indicated even smaller knot values had nearly equivalent out of sample predictive performance (Fig. S1). 
+Our initial results fitting the binomial and Gamma models across a range of species and mesh cutoff values demonstrated that after some optimal spatial cutoff of triangles in the mesh, predictive accuracy of the spatial models deteriorated as mesh resolution was increased. Binomial models of Darkblotched Rockfish (Fig. 2) and Gamma models for all species also supported a decline in performance with the coarsest mesh resolutions (Fig. S1). The binomial sub-model suggested that the optimal number of knots was 200--250 (Fig. 2), and the positive Gamma sub-model indicated even smaller knot values had nearly equivalent out of sample predictive performance (Fig. S1). In contrast to the decline in out of sample performance with high mesh resolution, we found the opposite to be true for in sample data; for both the binomial and Gamma models, predictive performance generally increased with the number of knots (Fig. 2, Fig. S1).  
 
 To verify that our results are not driven by the choice of sampling scheme for spatial cross validation, we re-fit the binomial model for Dover Sole across a range of spatial sampling blocks (Fig. 3) and folds for cross-validation (10 and 40, Fig. S3). For relatively small numbers of spatial blocks (19, 25) there appears to be a decline in predictive performance at small numbers of knots (Fig. 3, Fig. S3), but with large numbers of spatial blocks (> 50), coarse resolution meshes have similar performance as models with moderate numbers of knots. 
 
