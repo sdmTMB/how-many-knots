@@ -25,7 +25,7 @@ df <- expand.grid(
 )
 
 set.seed(2021)
-use_reml = FALSE
+use_reml <- FALSE
 # Source David Miller's code
 source("code/mgcv_spde_smooth.R")
 
@@ -100,34 +100,36 @@ for (i in 1:nrow(df)) {
   # )
 
   # do cross validation here
-  haul_new = as.data.frame(haul_new)
+  haul_new <- as.data.frame(haul_new)
   haul_new$pred <- NA
-  
+
   for (k in 1:max(haul_new$fold)) {
-    fit_train <- mgcv::gam(present ~ s(X,Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
-                           data = haul_new,
-                           family=binomial(),
-                           method = ifelse("use_reml"==TRUE,"REML","ML"),
-                           control =  gam.control(scalePenalty = FALSE))
-    
-      # fit_train <- mgcv::gam(present ~ s(X,Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
-      #          data = haul_new,
-      #          family=binomial(),
-      #          control =  gam.control(scalePenalty = FALSE),
-      #          method = "REML")
-    
+    fit_train <- mgcv::gam(present ~ s(X, Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
+      data = haul_new,
+      family = binomial(),
+      method = ifelse("use_reml" == TRUE, "REML", "ML"),
+      control = gam.control(scalePenalty = FALSE)
+    )
+
+    # fit_train <- mgcv::gam(present ~ s(X,Y, bs = "spde", k = mesh$n, xt = list(mesh = mesh)),
+    #          data = haul_new,
+    #          family=binomial(),
+    #          control =  gam.control(scalePenalty = FALSE),
+    #          method = "REML")
+
     test_indx <- which(haul_new$fold == k)
     # if model didn't have problems
-    #if (class(fit_train)[1] == "bru") {
-      #if (fit_train$ok == TRUE) {
-        pred_test <- predict(fit_train, 
-          newdata = haul_new[test_indx,])
-        haul_new$pred[test_indx] <- pred_test
-      #} else {
-      #  # model had issues
-      #  haul_new$pred[test_indx] <- NA
-      #}
-    #}
+    # if (class(fit_train)[1] == "bru") {
+    # if (fit_train$ok == TRUE) {
+    pred_test <- predict(fit_train,
+      newdata = haul_new[test_indx, ]
+    )
+    haul_new$pred[test_indx] <- pred_test
+    # } else {
+    #  # model had issues
+    #  haul_new$pred[test_indx] <- NA
+    # }
+    # }
   }
   # calculate total log density
   df$dens_ll[i] <-
@@ -141,7 +143,11 @@ for (i in 1:nrow(df)) {
 }
 
 pdf("plots/gam_estimates.pdf")
-ggplot(df,aes(n,dens_ll)) + geom_point() + facet_wrap(~species) + 
-  theme_bw() + xlab("Knots") + ylab("Binomial predicted density") + 
+ggplot(df, aes(n, dens_ll)) +
+  geom_point() +
+  facet_wrap(~species) +
+  theme_bw() +
+  xlab("Knots") +
+  ylab("Binomial predicted density") +
   ggtitle("Estimation done via mgcv (D. Miller's SPDE code)")
 dev.off()

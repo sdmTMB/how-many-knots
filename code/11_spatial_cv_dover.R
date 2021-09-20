@@ -22,7 +22,7 @@ coordinates(dover) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = c(10,75),
+  "cutoff" = c(10, 75),
   "range" = 75,
   "folds" = 10,
   "n" = NA,
@@ -33,7 +33,7 @@ boundary <- inla.nonconvex.hull(coordinates(dover),
   convex = -0.05
 )
 
-pred = list()
+pred <- list()
 for (i in 1:nrow(df)) {
   # n_blocks <- df$blocks[i]
   # # first assign blocks
@@ -96,9 +96,8 @@ for (i in 1:nrow(df)) {
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
       if (fit_train$ok) {
-        
-        pred_test <- predict(fit_train, 
-          data = dover[test_indx, , drop = FALSE], 
+        pred_test <- predict(fit_train,
+          data = dover[test_indx, , drop = FALSE],
           formula = ~ Intercept + field
         )
         dover$pred[test_indx] <- pred_test$mean
@@ -108,7 +107,7 @@ for (i in 1:nrow(df)) {
       }
     }
   }
-  pred[[i]] = plogis(dover$pred)
+  pred[[i]] <- plogis(dover$pred)
   # calculate total log density
   df$dens_ll[i] <-
     sum(dbinom(
@@ -117,18 +116,18 @@ for (i in 1:nrow(df)) {
       prob = plogis(dover$pred),
       log = TRUE
     ))
-  #saveRDS(df, "output/04_binomial_cv_df.rds")
+  # saveRDS(df, "output/04_binomial_cv_df.rds")
 }
 
-dover$pred_10 = pred[[1]]
-dover$pred_75 = pred[[2]]
+dover$pred_10 <- pred[[1]]
+dover$pred_75 <- pred[[2]]
 
 pdf("figures/archive/predictions_fine_v_coarse.pdf")
-ggplot(as.data.frame(dover), aes(pred_10,pred_75)) + 
-  geom_point() + 
-  geom_abline(aes(slope=1,intercept=0)) + 
-  facet_wrap(~present) + theme_bw() +
-  xlab("Predicted occurrence, cutoff=10km") + 
-  ylab("Predicted occurrence, cutoff=75km") 
+ggplot(as.data.frame(dover), aes(pred_10, pred_75)) +
+  geom_point() +
+  geom_abline(aes(slope = 1, intercept = 0)) +
+  facet_wrap(~present) +
+  theme_bw() +
+  xlab("Predicted occurrence, cutoff=10km") +
+  ylab("Predicted occurrence, cutoff=75km")
 dev.off()
-

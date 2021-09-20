@@ -27,35 +27,37 @@ set.seed(2021)
 
 for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
-  
+
   # Join catch and haul data
   haul_new <- haul %>%
     left_join(catch_sub, by = "trawl_id") %>%
     select(trawl_id, X, Y,
-           latitude = latitude_dd.x,
-           longitude = longitude_dd.x,
-           year = year,
-           log_depth_scaled,
-           log_depth_scaled2,
-           cpue_kg_km2,
-           temperature_at_gear_c_der
+      latitude = latitude_dd.x,
+      longitude = longitude_dd.x,
+      year = year,
+      log_depth_scaled,
+      log_depth_scaled2,
+      cpue_kg_km2,
+      temperature_at_gear_c_der
     )
   # Set NA CPUEs to 0
-  #haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
-  haul_new <- dplyr::filter(haul_new, 
-                            !is.na(temperature_at_gear_c_der))
+  # haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
+  haul_new <- dplyr::filter(
+    haul_new,
+    !is.na(temperature_at_gear_c_der)
+  )
   # convert coordinates to km
   haul_new$X <- haul_new$X / 1000
   haul_new$Y <- haul_new$Y / 1000
   # create occurrence field
   haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
   coordinates(haul_new) <- c("X", "Y")
-  
+
   # create boundary, same for all meshes
   boundary <- inla.nonconvex.hull(coordinates(haul_new),
-                                  convex = -0.05
+    convex = -0.05
   )
-  
+
   n_folds <- 10
   n_blocks <- df$blocks[i]
   # first assign blocks
@@ -72,7 +74,7 @@ for (i in 1:nrow(df)) {
   haul_new <- dplyr::left_join(as.data.frame(haul_new), block_fold)
   # return to SpatialPointsDataFrame
   coordinates(haul_new) <- c("X", "Y")
-  
+
   # create mesh
   mesh <- inla.mesh.2d(
     loc = coordinates(haul_new),
@@ -88,8 +90,8 @@ for (i in 1:nrow(df)) {
   # use PC prior for matern model
   matern <-
     inla.spde2.pcmatern(mesh,
-                        prior.sigma = c(5, 0.05),
-                        prior.range = c(20, 0.05)
+      prior.sigma = c(5, 0.05),
+      prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
   components <- temperature_at_gear_c_der ~ Intercept + field(
@@ -109,8 +111,8 @@ for (i in 1:nrow(df)) {
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
       if (fit_train$ok) {
-        pred_test <- predict(fit_train, 
-          data = haul_new[test_indx, , drop = FALSE], 
+        pred_test <- predict(fit_train,
+          data = haul_new[test_indx, , drop = FALSE],
           formula = ~ Intercept + field
         )
         haul_new$pred[test_indx] <- pred_test$mean
@@ -121,10 +123,10 @@ for (i in 1:nrow(df)) {
     }
     # get precision parameter for the Gamma observations
     tau <- fit_train$summary.hyperpar$mean[1]
-    
+
     fold_ll[k] <- sum(dnorm(haul_new$temperature_at_gear_c_der[test_indx],
       mean = haul_new$pred[test_indx],
-      sd = sqrt(1/tau),
+      sd = sqrt(1 / tau),
       log = TRUE
     ))
   }

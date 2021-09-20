@@ -95,9 +95,8 @@ for (i in 1:nrow(df)) {
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
       if (fit_train$ok) {
-        
-        pred_test <- predict(fit_train, 
-          data = dover[test_indx, , drop = FALSE], 
+        pred_test <- predict(fit_train,
+          data = dover[test_indx, , drop = FALSE],
           formula = ~ Intercept + field
         )
         dover$pred[test_indx] <- pred_test$mean

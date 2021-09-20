@@ -17,20 +17,22 @@ df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
   "species" = c(
     "Dover sole", "petrale sole", "darkblotched rockfish",
-    "lingcod"),
+    "lingcod"
+  ),
   "n" = NA,
-  "b"=NA,
-  "b_sd"=NA,
-  "b_lo"=NA,
-  "b_hi"=NA,
+  "b" = NA,
+  "b_sd" = NA,
+  "b_lo" = NA,
+  "b_hi" = NA,
   "range" = NA,
-  "range_sd"=NA,
-  "range_lo"=NA,
-  "range_hi"=NA,
+  "range_sd" = NA,
+  "range_lo" = NA,
+  "range_hi" = NA,
   "sd" = NA,
-  "sd_sd"=NA,
-  "sd_lo"=NA,
-  "sd_hi"=NA)
+  "sd_sd" = NA,
+  "sd_lo" = NA,
+  "sd_hi" = NA
+)
 
 set.seed(2021)
 
@@ -88,17 +90,17 @@ for (i in 1:nrow(df)) {
   )
 
   fit <- try(bru(components,
-                       haul_new,
-                       family = "binomial"
+    haul_new,
+    family = "binomial"
   ), silent = TRUE)
-  if(fit$ok==TRUE) {
-    df[i,c("range","range_sd","range_lo","range_hi")] <- 
-      as.numeric(fit$summary.hyperpar[1,c("mean","sd","0.025quant","0.975quant")])
-    df[i,c("sd","sd_sd","sd_lo","sd_hi")] <- 
-      as.numeric(fit$summary.hyperpar[2,c("mean","sd","0.025quant","0.975quant")])
-    df[i,c("b","b_sd","b_lo","b_hi")] <- 
-      as.numeric(fit$summary.fixed[1,c("mean","sd","0.025quant","0.975quant")])
+  if (fit$ok == TRUE) {
+    df[i, c("range", "range_sd", "range_lo", "range_hi")] <-
+      as.numeric(fit$summary.hyperpar[1, c("mean", "sd", "0.025quant", "0.975quant")])
+    df[i, c("sd", "sd_sd", "sd_lo", "sd_hi")] <-
+      as.numeric(fit$summary.hyperpar[2, c("mean", "sd", "0.025quant", "0.975quant")])
+    df[i, c("b", "b_sd", "b_lo", "b_hi")] <-
+      as.numeric(fit$summary.fixed[1, c("mean", "sd", "0.025quant", "0.975quant")])
   }
-  
+
   saveRDS(df, "output/09_binom_params_4species.rds")
 }

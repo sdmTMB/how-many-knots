@@ -22,7 +22,7 @@ coordinates(dover) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = c(10,15, 20, 25, 30, 50, 75),
+  "cutoff" = c(10, 15, 20, 25, 30, 50, 75),
   "holdout" = seq(1, nrow(dover)),
   "n" = NA,
   "dens_ll" = NA
@@ -60,10 +60,10 @@ for (i in 1:nrow(df)) {
 
   # do cross validation here
   fit_train <- try(bru(components,
-    dover[-df$holdout[i], ,drop = FALSE],
+    dover[-df$holdout[i], , drop = FALSE],
     family = "binomial"
   ), silent = TRUE)
-  pred_test <- predict(fit_train, dover[df$holdout[i], ,drop = FALSE], ~ Intercept + field)
+  pred_test <- predict(fit_train, dover[df$holdout[i], , drop = FALSE], ~ Intercept + field)
 
   # calculate total log density
   df$dens_ll[i] <-

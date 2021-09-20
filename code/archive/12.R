@@ -90,8 +90,8 @@ for (i in 1:nrow(df)) {
   # use PC prior for matern model
   matern <-
     inla.spde2.pcmatern(mesh,
-                        prior.sigma = c(5, 0.05),
-                        prior.range = c(20, 0.05)
+      prior.sigma = c(5, 0.05),
+      prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
   components <- cpue_kg_km2 ~ Intercept + field(
@@ -111,8 +111,8 @@ for (i in 1:nrow(df)) {
     # if model didn't have problems
     if (class(fit_train)[1] == "bru") {
       if (fit_train$ok) {
-        pred_test <- predict(fit_train, 
-          data = haul_new[test_indx, , drop = FALSE], 
+        pred_test <- predict(fit_train,
+          data = haul_new[test_indx, , drop = FALSE],
           formula = ~ Intercept + field
         )
         haul_new$pred[test_indx] <- pred_test$mean

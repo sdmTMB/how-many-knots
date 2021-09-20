@@ -17,7 +17,7 @@ haul <- haul %>%
     !is.na(longitude_dd), !is.na(latitude_dd),
     performance == "Satisfactory"
   ) %>%
-  dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m,temperature_at_gear_c_der)
+  dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m, temperature_at_gear_c_der)
 
 haul_trans <- haul
 coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")
@@ -80,7 +80,7 @@ saveRDS(sub, "data/catch_cleaned.rds")
 #   dplyr::summarise(m = sum(cpue_kg_km2)) %>%
 #   dplyr::arrange(-m) %>%
 #   dplyr::filter(!is.na(common_name))
-# 
+#
 # sub = dplyr::filter(catch, common_name %in% top_spp$common_name[1:30]) %>%
 #   dplyr::filter(common_name %in% c("crushed urchin","Mud Urchin","Red Star")==FALSE)
 
