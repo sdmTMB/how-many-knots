@@ -142,99 +142,115 @@ TODO (WORK IN SDMTMB COMPARISON, FIGURE FROM SEAN?)
 
 ## Discussion
 
-1. 
-Larger meshes aren't necessarily better.
-Others have pointed this out, [@huang_evaluating_2017], but it gets overlooked
+Spatial and spatiotemporal models are becoming increasingly used in ecology, fisheries, and related sub-fields, in particular to address questions related to changing species distributions in time and space. High dimensional datasets with hundreds of observations introduce computational challenges, but complicated spatial structure can be efficiently approximated using the SPDE approach [@miller2020]. Combined with the INLA software for estimation [@rue_approximate_2009], these tools have become widely accessible. Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the mesh to approxmiate spatial processes can be confusing. Identifying the spatial complexity introduces new computational challenges for analysts, but is important for improving predictions and derived quantities of interest (indices of population abundance, area occupied, centre of gravity, etc.). 
 
-Datasets like the WCTBS support an optimal mesh of \~ 300 or fewer knots
+Using a publicly available dataset of groundfishes in the NE Pacific Ocean, we use a number of sensitivity analyses to demonstrate an important tradeoff between mesh resolution and the predictive accuracy of spatial models using the SPDE--INLA approach. As expected, models with higher resolution meshes (more knots or vertices) are more flexible and can better explain variation in data used to fit the model. For applications interested in identifying models with good predictive ability for future data (either in space or time), we demonstrate that models with the finest spatial approximations have deteriorating predictive performance for out of sample data, when compared to coarser models. Declines in out of sample predictive performance with too many knots appears robust to (1) how data are spatially sampled for cross-validation, (2) the specific penalized complexity priors used for the Matern function, and (3) whether estimation is done using INLA or maximum likelihood with TMB. Datasets like the groundfish case study used here (n = 702) support meshes with \~ 300 or fewer knots, though some of the models supported even fewer knots. 
 
+While there are a number of alternative ways to measure model performance, we recommend using k-fold cross-validation to explore predictive accuracy across a range of meshes. Alternative measures of model fit exist, including the conditional predictive ordinate [@pettit1990]. While the CPO may approximate LOOCV for some datasets, we found a mismatch between CPO and LOOCV, with CPO supporting meshes with very large numbers of knots and true LOOCV supporting fewer. Other tools like AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
 
-2. 
-Selecting the location and number of knots isn't unique to INLA based models -- other examples include GP models [@banerjee2013; @garton2020] or P-splines [@ruppert2002]
+Comparing the performance of models with alternative spatial complexity obviously introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots. This challenge is not unique to models using the INLA--SPDE approach; selecting both the location and number of knots is a general problem for knot--based spatial models. Other examples of spatial statistics models that have encountered this issue include machine learning methods (reviewed in [@banerjee2013]), Gaussian Process models [@garton2020] and P-splines [@ruppert2002]. Identifying a range of knot values that yield good predictive performance will be specific to individual datasets (e.g. magnitude of observation error, spatial autocorrelation, number of observations, type of response). The optimal mesh resolution for one species may be informative for other species from the same dataset, potentially reducing the computational overhead.  
 
 3. 
 Rules of thumb? This is tricky because it's somewhat dataset specific. The blockCV MEE paper suggests defining spatial blocks based on residual spatial autocorrelation -- which involves fitting the model, so somewhat circular [and tools like calculating the variogram are made difficult by non-normal response data]. Most advanced GP approaches include knot selection as a parameter, or do an adaptive grid search
 
 The number of knots needed to generate a model with high predictive accuracy depends on the other features of the model. Some of this is based on data (e.g. homogenous spp like Dover sole vs patchily distributed rockfish), but a lot of this is dependent on how much variation is parsed into observation error. High obs errors will result in flatter spatial fields, which will require fewer knots. 
 
-Cross-validation is important for identifying the range of knots with highest predictive accuracy
 
 4. 
 Make bridge with GAMs. GAMs allow for a flexible range of smoothing functions, including gaussian processes with the Matérn covariance. [@miller2020; @yue2014] did a great job linking these and showing the common interpretations between SPDEs and smoothing splines. One option would be to use GAMs to compare alternative meshes / numbers of knots, but that begs the question why we aren't just doing this in mgcv in the first place. 
 
-5. 
-Sub-optimal meshes are likely to have an impact on derived things we care about, like indices of abundance -- both bias and precision, fig s2
+Future research:
+- is this a feature of triangulation with inla? would we get better estimates from a higher dimensional GP model? 
+
+ -- both bias and precision, fig s2
+- don't use AIC
+- identifying the appropriate spatial complexity is important for 
+
 
 
 ## Acknowledgements
 
-We would like to express our gratitude to Dave Miller and Andy Seaton for helpful comments that improved our analysis and presentation of results. 
-
-\break
-
+We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shelton for helpful comments that improved our analysis and presentation of results.  
+  
+\break  
+  
 ## Figures
 
-```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively."}
+```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", fig.pos="placeHere"}
 source("figures/figure_01_mesh.r")
 gridExtra::grid.arrange(p2,p1,nrow=1)
 ```
 
 \break  
 
-```{r fig2, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
+```{r fig2, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
 source("figures/figure_02_binom_dens_4species.R")
 gridExtra::grid.arrange(g1,g2)
 ```
 
 \break  
-```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios."}
+```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"}
 source("figures/figure_03_binomial.R")
 g1
 ```
 
 \break  
 
-```{r fig4, echo=FALSE, fig.cap = "Comparison of CPO and LOOCV for the binomial presence-absence model of Dover sole. A wider range of cutoff values is shown for CPO (5-100km) than LOOCV (10-75km) to reduce computational time."}
+```{r fig4, echo=FALSE, fig.cap = "Comparison of CPO and LOOCV for the binomial presence-absence model of Dover sole. A wider range of cutoff values is shown for CPO (5-100km) than LOOCV (10-75km) to reduce computational time.", fig.pos="placeHere"}
 source("figures/figure_04_loocv_v_cpo.R")
 g1
 ```
 
 \break  
 
-```{r fig5, echo=FALSE, fig.cap = "Estimates of the Matérn range and spatial scale, along with standard deviations for each parameter, across four species in the WCBTS survey. Cutoff values from 3-120km are shown. ", fig.height=7}
+```{r fig5, echo=FALSE, fig.cap = "Estimates of the Matérn range and spatial scale, along with standard deviations for each parameter, across four species in the WCBTS survey. Cutoff values from 3-120km are shown. ", fig.height=7, fig.pos="placeHere"}
 source("figures/figure_05_range_v_knots.R")
 gridExtra::grid.arrange(g1,g2,g3,g4,ncol=1)
 ```
 
 \break
 
-```{r fig-s1, echo=FALSE, fig.cap = "Gamma predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)"}
+```{r fig-s1, echo=FALSE, fig.cap = "Gamma predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
 source("figures/figure_S1_gamma_dens_4species.R")
 gridExtra::grid.arrange(g1,g2)
 ```
 
 \break
 
-```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)"}
+```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
 source("figures/figure_S2_gamma_intercepts_4spp.R")
 g1
 ```
 
 \break
 
-```{r fig-s3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 40-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios."}
+```{r fig-s3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 40-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"}
 source("figures/figure_03_binomial.R")
 g2
 ```
 
 \break  
 
-```{r fig-s4, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA."}
+```{r fig-s4, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA.", fig.pos="placeHere"}
 source("figures/figure_tmb_binom.R")
 g1
 ```
 
 \break  
+  
+```{r fig-s5, echo=FALSE, fig.cap = "Prior sensitivity for Dover Sole presence-absence model, as a function of number of knots (using cutoff values from 3-120km) and hyperparameters of the Matern function.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}  
+
+source("figures/figure_priors.R")
+grid::grid.draw(final_fig)  
+```
+  
+
+
+\break
+\break 
 
   
+    
+    
+
 # References

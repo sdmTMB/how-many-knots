@@ -23,8 +23,8 @@ prior_sigma <- data.frame(
 prior_range <- data.frame(
   "prior.range_cutoff" = c(5, 20, 40, rep(20, 3)),
   "prior.range_thresh" = c(rep(0.05, 3), 0.01, 0.1, 0.4),
-  "prior.sigma_cutoff" = 0.05,
-  "prior.sigma_thresh" = 5,
+  "prior.sigma_cutoff" = 5,
+  "prior.sigma_thresh" = 0.05,
   "sensitivity" = c(rep("range_cutoff", 3), rep("range_p", 3))
 )
 priors <- rbind(prior_sigma, prior_range)
