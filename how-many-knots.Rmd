@@ -213,12 +213,12 @@ source("figures/figure_S1_gamma_dens_4species.R")
 gridExtra::grid.arrange(g1,g2)
 ```
 
-\break
+<!-- \break -->
 
-```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
-source("figures/figure_S2_gamma_intercepts_4spp.R")
-g1
-```
+# ```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
+# source("figures/figure_S2_gamma_intercepts_4spp.R")
+# g1
+# ```
 
 \break
 
