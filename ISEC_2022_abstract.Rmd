@@ -1,0 +1,10 @@
+---
+title: "ISEC_Abstract"
+output: pdf_document
+---
+
+## Abstract
+
+Spatial and spatiotemporal models are increasingly used in ecology and related fields; applications relying on these methods have used them to track population change over time, assess changing species distributions, and model spatial population processes (predation, habitat use, fishing impacts, etc). Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional surfaces (100s or more georeferenced points), using Stochastic Partial Differentiation Equations (SPDE). These methods are accessible in several widely used packages, including Integrated Nested Laplace Approximation (INLA). One of the most critical decisions for building models using the SPDE approach (in INLA or related tools) is how to construct the spatial approximation ("mesh"). Example decisions include the resolution of the latent approximation, and location of vertices ("knots"). Little guidance has been established in constructing these approximations, with some previous applications suggesting that higher resolution meshes result in better predictive performance. 
+In this talk, we explore how mesh construction and dimensionality affects the predictive performance of spatiotemporal generalized linear models (GLMMs). We use simulated data, and a long running dataset on commercially fished species on the west coast of the USA to build spatiotemporal models of occurrence and density, using a delta-modeling framework. Our results highlight that for both presence-absence and positive sub-models, the highest resolution meshes considered result in overfitting and decreased out of sample predictive performance. Models with intermediate mesh complexity also resulted in improved parameter estimates and derived quantities (indices of abundance). These results held across a range of species occurrences, and cross validation sampling schemes (random, spatially blocked). Finally, we discuss strategies and guidance for constructing SPDE meshes that don’t require an exhaustive parameter search.
+
