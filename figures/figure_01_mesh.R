@@ -68,15 +68,15 @@ plot_df <- data.frame(coordinates(dover))
 p2 <- ggplot() +
   gg(mesh2) +
   theme_bw() +
-  xlab("Longitude") +
-  ylab("Latitude") +
+  xlab("Eastings") +
+  ylab("Northings") +
   geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = "purple", size = 0.4)
 
 p1 <- ggplot() +
   gg(mesh1) +
   theme_bw() +
-  xlab("Longitude") +
-  ylab("Latitude") +
+  xlab("Eastings") +
+  ylab("Northings") +
   geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = "purple", size = 0.4)
 
 pdf("figures/Figure_01.pdf")

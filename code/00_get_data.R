@@ -74,6 +74,13 @@ sub <- dplyr::filter(catch, common_name %in% c(
 saveRDS(sub, "data/catch_cleaned.rds")
 
 
+# create temperature dataset
+trawlid_date <- dplyr::group_by(sub, trawl_id) %>%
+  dplyr::summarize(date = date[1])
+trawlid_date$month <- substr(trawlid_date$date, 6, 8)
+trawlid_date <- dplyr::filter(trawlid_date, month == "Jun")
+haul <- dplyr::filter(haul, trawl_id %in% trawlid_date$trawl_id)
+saveRDS(haul, "data/june_bottom_temp.rds")
 
 # top_spp <-
 #   dplyr::group_by(catch, common_name) %>%

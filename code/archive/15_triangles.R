@@ -20,18 +20,21 @@ inla.mesh2sp <- function(mesh) {
     stop(paste0(
       "'sp' doesn't support storing polygons in geocentric coordinates.\n",
       "Convert to a map projection with inla.spTransform() before
-calling inla.mesh2sp()."))
+calling inla.mesh2sp()."
+    ))
   }
-  
+
   triangles <- SpatialPolygonsDataFrame(
     Sr = SpatialPolygons(lapply(
       1:nrow(mesh$graph$tv),
       function(x) {
         tv <- mesh$graph$tv[x, , drop = TRUE]
         Polygons(list(Polygon(mesh$loc[tv[c(1, 3, 2, 1)],
-                                       1:2,
-                                       drop = FALSE])),
-                 ID = x)
+          1:2,
+          drop = FALSE
+        ])),
+        ID = x
+        )
       }
     ),
     proj4string = crs
@@ -40,7 +43,7 @@ calling inla.mesh2sp()."))
     match.ID = FALSE
   )
   vertices <- SpatialPoints(mesh$loc[, 1:2, drop = FALSE], proj4string = crs)
-  
+
   list(triangles = triangles, vertices = vertices)
 }
 
@@ -49,17 +52,19 @@ calling inla.mesh2sp()."))
 #'
 #' @param inla_mesh An \code{\link{inla.mesh}} object
 #' @param coordinates A matrix or dataframe of coordinates
-overlay = function(inla_mesh, coordinates) {
-# convert mesh to list of triangles
-# see https://groups.google.com/g/r-inla-discussion-group/c/z1n1exlZrKM
-sp = inla.mesh2sp(inla_mesh)
-# add ids
-sp[[1]]@data$id = 1:nrow(sp[[1]]@data)
-# turn points to SP data frame and add the ids
-p <- SpatialPointsDataFrame(coords=coordinates, 
-                            data.frame(ids=1:nrow(coordinates)))
-#plot(sp[[1]])
-#points(p,col="red")
-res <- sp::over(p, sp[[1]])
-return(res)
+overlay <- function(inla_mesh, coordinates) {
+  # convert mesh to list of triangles
+  # see https://groups.google.com/g/r-inla-discussion-group/c/z1n1exlZrKM
+  sp <- inla.mesh2sp(inla_mesh)
+  # add ids
+  sp[[1]]@data$id <- 1:nrow(sp[[1]]@data)
+  # turn points to SP data frame and add the ids
+  p <- SpatialPointsDataFrame(
+    coords = coordinates,
+    data.frame(ids = 1:nrow(coordinates))
+  )
+  # plot(sp[[1]])
+  # points(p,col="red")
+  res <- sp::over(p, sp[[1]])
+  return(res)
 }
