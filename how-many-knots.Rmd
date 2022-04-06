@@ -175,8 +175,6 @@ Future research:
 - don't use AIC
 - identifying the appropriate spatial complexity is important for 
 
-
-
 ## Acknowledgements
 
 We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shelton for helpful comments that improved our analysis and presentation of results.  
@@ -192,22 +190,29 @@ gridExtra::grid.arrange(p2,p1,nrow=1)
 
 \break  
 
-```{r fig2, echo=FALSE, fig.cap = "Centered June temperature from the 2018 WCBTS survey (sample locations further offshore are typically at greater depth, and colder). Log predictive densities are shown for the test and training datasets in our modeling. Each data point represents a different mesh, constructed by varying the cutoff distance (x-axis).", fig.pos="placeHere"}
+```{r fig2, echo=FALSE, fig.cap = "Centered June temperature from the 2018 WCBTS survey (sample locations further offshore are typically at greater depth, and colder). Log predictive densities are shown for the test and training datasets in our modeling. Each data point represents a different mesh, constructed by varying the cutoff distance (x-axis); higher cutoff values correspond to coarser meshes.", fig.pos="placeHere"}
 source("figures/figure_2_temp_results.R")
 g
 ```
 
 \break  
 
-```{r fig2b, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"}
-source("figures/figure_02_binom_dens_4species.R")
+```{r fig3, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for four species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes)", fig.pos="placeHere"}
+source("figures/figure_03_binom_dens_4species.R")
 gridExtra::grid.arrange(g1,g2)
 ```
 
+<!-- \break   -->
+<!-- ```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"} -->
+<!-- source("figures/figure_03_binomial.R") -->
+<!-- g1 -->
+<!-- ``` -->
+
 \break  
-```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"}
-source("figures/figure_03_binomial.R")
-g1
+
+```{r fig4, echo=FALSE, fig.cap = "Gamma predictive densities for catch rate models for four species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes)", fig.height=7, fig.pos="placeHere"}
+source("figures/figure_04_gamma_dens_4species.R")
+gridExtra::grid.arrange(g1,g2)
 ```
 
 \break  

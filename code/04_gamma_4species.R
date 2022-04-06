@@ -17,8 +17,11 @@ catch <- readRDS("data/catch_cleaned.rds")
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(10,40),
-  "species" = unique(catch$common_name),
+  "blocks" = c(10),
+  "species" = c(
+    "Dover sole", "petrale sole", "darkblotched rockfish",
+    "lingcod"
+  ),
   "n" = NA,
   "dens_ll" = NA,
   "dens_ll_train" = NA
@@ -32,7 +35,7 @@ for (i in 1:nrow(df)) {
   # Join catch and haul data
   haul_new <- haul %>%
     left_join(catch_sub, by = "trawl_id") %>%
-    dplyr::select(trawl_id, X, Y,
+    select(trawl_id, X, Y,
       latitude = latitude_dd.x,
       longitude = longitude_dd.x,
       year = year,
@@ -263,5 +266,5 @@ for (i in 41:nrow(df)) {
   # calculate total log density
   df$dens_ll[i] <- sum(fold_ll)
   df$dens_ll_train[i] <- fold_ll_train[1]
-  saveRDS(df, file = "output/03_gamma_dens_4species.rds")
+  saveRDS(df, file = "output/04_gamma_dens_4species.rds")
 }

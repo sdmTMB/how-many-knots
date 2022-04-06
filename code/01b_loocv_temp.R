@@ -17,7 +17,7 @@ coordinates(haul) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = seq(20, 160, by = 10),
+  "cutoff" = seq(20, 160, by = 5),
   "holdout" = seq(1, nrow(haul)),
   "n" = NA,
   "dens_ll" = NA

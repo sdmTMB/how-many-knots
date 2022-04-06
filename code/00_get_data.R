@@ -64,12 +64,18 @@ saveRDS(haul_new, "data/doversole_cleaned.rds")
 
 saveRDS(haul, "data/haul_cleaned.rds")
 
+dplyr::group_by(catch, common_name) %>% 
+  dplyr::summarize(n = length(which(cpue_kg_km2>0))) %>%
+  dplyr::arrange(-n)
+
 # petrale sole", "darkblotched rockfish","lingcod", "sablefish
 sub <- dplyr::filter(catch, common_name %in% c(
-  "Dover sole",
-  "petrale sole",
-  "darkblotched rockfish",
-  "lingcod"
+  "Dover sole", # 593 pos tows
+  "sablefish",# 435 pos tows
+  "petrale sole",#291
+  "lingcod",#225
+  "darkblotched rockfish", # 105
+  "Pacific ocean perch"# 40 tows
 ))
 saveRDS(sub, "data/catch_cleaned.rds")
 
