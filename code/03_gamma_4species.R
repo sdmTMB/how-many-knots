@@ -92,7 +92,7 @@ for (i in 1:nrow(df)) {
       prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
-  components <- cpue_kg_km2 ~ Intercept + field(
+  components <- cpue_kg_km2 ~ Intercept + log_depth_scaled + log_depth_scaled2 + field(
     main = coordinates,
     model = matern
   )
@@ -111,9 +111,16 @@ for (i in 1:nrow(df)) {
       if (fit_train$ok) {
         pred_test <- predict(fit_train,
           data = haul_new[test_indx, , drop = FALSE],
-          formula = ~ Intercept + field
+          formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field 
         )
         haul_new$pred[test_indx] <- pred_test$mean
+        if (k == 1) {
+          pred_train <- predict(fit_train,
+                                data = haul_new[which(haul_new$fold != k), ],
+                                formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field
+          )
+          haul_new$predtrain[which(haul_new$fold != k)] <- pred_train$mean
+        }
       } else {
         # model had issues
         haul_new$pred[test_indx] <- NA
@@ -129,15 +136,22 @@ for (i in 1:nrow(df)) {
       scale = exp(haul_new$pred[test_indx]) / gamma_prec,
       log = TRUE
     ))
+    if (k == 1) {
+      fold_ll_train[k] <- sum(dgamma(haul_new$cpue_kg_km2[which(haul_new$fold != k)],
+                                     shape = gamma_prec,
+                                     scale = exp(haul_new$predtrain[which(haul_new$fold != k)]) / gamma_prec,
+                                     log = TRUE
+      ))
+    }
   }
   # calculate total log density
   df$dens_ll[i] <- sum(fold_ll)
   saveRDS(df, file = "output/03_gamma_dens_4species.rds")
 }
 
-
-
-for (i in 41:nrow(df)) {
+if(run) {
+# This code chunk is for holding out just 1 block, not doing full CV
+for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
 
   # Join catch and haul data
@@ -264,4 +278,5 @@ for (i in 41:nrow(df)) {
   df$dens_ll[i] <- sum(fold_ll)
   df$dens_ll_train[i] <- fold_ll_train[1]
   saveRDS(df, file = "output/03_gamma_dens_4species.rds")
+}
 }

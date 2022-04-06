@@ -89,7 +89,7 @@ for (i in 1:nrow(df)) {
       prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
-  components <- present ~ Intercept + field(
+  components <- present ~ Intercept + log_depth_scaled + log_depth_scaled2 + field(
     main = coordinates,
     model = matern
   )
@@ -108,19 +108,19 @@ for (i in 1:nrow(df)) {
       if (fit_train$ok == TRUE) {
         pred_test <- predict(fit_train,
           data = haul_new[test_indx, , drop = FALSE],
-          formula = ~ Intercept + field
+          formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field
         )
         haul_new$pred[test_indx] <- pred_test$mean
 
         if (k == 1) {
           pred_train <- predict(fit_train,
             data = haul_new[which(haul_new$fold != k), ],
-            formula = ~ Intercept + field
+            formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field
           )
           haul_new$predtrain[which(haul_new$fold != k)] <- pred_train$mean
         }
       } else {
-        # model had issues
+        # model had issues, didn't converge
         haul_new$pred[test_indx] <- NA
 
         if (k == 1) {
@@ -149,6 +149,8 @@ for (i in 1:nrow(df)) {
   saveRDS(df, "output/02_binom_dens_4species.rds")
 }
 
+if(run) {
+  # don't do full CV, just hold 1 block out
 for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
 
@@ -251,4 +253,5 @@ for (i in 1:nrow(df)) {
       log = TRUE
     ), na.rm = T)
   saveRDS(df, "output/02_binom_dens_4species.rds")
+}
 }
