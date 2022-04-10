@@ -34,26 +34,33 @@ unit_scale <- 1000 # to change units from m to km
 shore$long <- shore$long/unit_scale
 shore$lat <- shore$lat/unit_scale
 
-haul$Temp = haul$temperature_at_gear_c_der - mean(haul$temperature_at_gear_c_der,na.rm=T)
+haul$Temp = haul$temperature_at_gear_c_der# - mean(haul$temperature_at_gear_c_der,na.rm=T)
 p1 <- dplyr::filter(haul, !is.na(Temp)) %>%
 ggplot(aes(X,Y,col=Temp)) + 
   geom_point(alpha=0.7) + 
   xlab("Eastings") + 
   ylab("Northings") + 
   theme_bw() + 
-  theme(panel.background=element_rect(fill = "dodgerblue3", colour = "dodgerblue3"),
+  theme(panel.background=element_rect(fill = "grey20", colour = "grey20"),
         panel.grid.minor=element_blank(),
         panel.grid.major=element_blank())+
-  scale_color_gradient2() + 
+  scale_color_gradient2(midpoint = mean(haul$temperature_at_gear_c_der,na.rm=T)) + 
   annotation_map(shore, color = "black", fill = "grey70",size=0.2)
 
 p2 <- ggplot(df_long, aes(cutoff, value)) +  
   geom_point(col="darkblue",alpha=0.7) + geom_line(col="darkblue")+
   xlab("Cutoff distance (km)") + 
-  ylab("Log predictive density") + 
+  ylab("Log density") + 
   facet_wrap(~Data,scale="free",ncol=1) + 
   theme_bw() + 
   theme(strip.background =element_rect(fill="white"))
   
 g <- cowplot::plot_grid(p1,p2)
 
+pdf("figures/Figure_02.pdf")
+g
+dev.off()
+
+jpeg("figures/Figure_02.jpeg")
+g
+dev.off()

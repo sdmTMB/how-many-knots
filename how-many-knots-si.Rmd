@@ -1,0 +1,162 @@
+---
+title: SI for Approximating spatial processes with too many knots degrades predictive accuracy of SPDE models
+output:
+  pdf_document:
+    fig_caption: yes
+    includes:
+      in_header: options.sty
+    latex_engine: xelatex
+  word_document: default
+  html_document: default
+  bookdown::pdf_document2:
+csl: mee.csl
+editor_options:
+  markdown:
+    wrap: sentence
+bibliography: how-many-knots.bib
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=FALSE, tidy.opts=list(width.cutoff=60), warning = FALSE, message = FALSE)
+library(knitr)
+library(ggrepel)
+library(viridis)
+library(gridExtra)
+library(cowplot)
+library(jpeg)
+```
+
+Table S1. Species common names, occurrence rates (of 702 tows), and catch per unit effort (kg per km2) in the 2018 WCBTS survey.
+```{r table-s1, echo=FALSE, fig.cap = "", fig.pos="placeHere"}
+m = data.frame("Common" = c("Dover sole","Sablefish","Petrale sole",
+                                 "Lingcod",
+                                 "Darkblotched rockfish",
+                                 "Pacific ocean perch"),
+               "Scientific" = c("Microstomus pacificus",
+                                     "Anoplopoma fimbria",
+                                     "Eopsetta jordani",
+                                     "Ophiodon elongatus",
+                                     "Sebastes crameri",
+                                     "Sebastes alutus"),
+               "Positive" = c(593,435,291,225,105,40),
+               "CPUE" = c(3261.9,2007.0,1042.1,1166.7,1386.5,8468.0))
+m$Occurrence = m$Positive/702
+m = dplyr::select(m, -Positive)
+knitr::kable(m, digits = 2)
+```
+
+\break  
+
+```{r fig-s1, echo=FALSE, fig.cap = "Distribution of presence-absence data in the 2018 WCBTS dataset. Grey points represent absences, red points represent occurrences", fig.pos="placeHere"}
+haul <- readRDS("data/haul_cleaned.rds")
+catch <- readRDS("data/catch_cleaned.rds")
+catch <- dplyr::left_join(catch[,c("trawl_id","cpue_kg_km2","common_name")], haul)
+catch$Present <- as.factor(ifelse(catch$cpue_kg_km2>0,1,0))
+
+catch$common_name[which(catch$common_name=="lingcod")] = "Lingcod"
+catch$common_name[which(catch$common_name=="Pacific ocean perch")] = "Pacific Ocean perch"
+catch$common_name[which(catch$common_name=="petrale sole")] = "Petrale sole"
+catch$common_name[which(catch$common_name=="sablefish")] = "Sablefish"
+catch$common_name[which(catch$common_name=="darkblotched rockfish")] = "Darkblotched rockfish"
+ggplot(catch, aes(X,Y)) + 
+  geom_point(size=0.1,alpha=0.3,col="grey30") + 
+  facet_wrap(~common_name) + 
+  xlab("Eastings") + 
+  ylab("Northings") + 
+  geom_point(data = dplyr::filter(catch,Present==1), aes(X,Y), alpha=0.3,size=0.1,col="red")
+
+```
+
+\break  
+
+```{r fig-s2, echo=FALSE, fig.cap = "Catch per unit effort (kg per km2) in the 2018 WCBTS survey. Estimates are shown in log space.", fig.pos="placeHere"}
+catch$CPUE <- log(catch$cpue_kg_km2)
+ggplot(dplyr::filter(catch,CPUE>0), aes(X,Y,col=CPUE)) + 
+  geom_point(size=0.1,alpha=0.3) + 
+  facet_wrap(~common_name) + 
+  xlab("Eastings") + 
+  ylab("Northings") + 
+  guides(col=guide_legend(title="ln(CPUE)"))
+  
+
+```
+  
+\break  
+  
+```{r fig-s3, echo=FALSE, fig.cap = "Mean standard errors of predictions for models of ocean temperature in the WCBTS survey, June 2018. Mean standard errors are calculated across all data points in the respective set (n = 150 train, 25 test).", fig.pos="placeHere", fig.height=2.5}
+source("figures/figure_s3_comparison_se.R")
+g
+```
+  
+```{r fig-s4, echo=FALSE, fig.cap = "Mean absolute errors of predictions for models of ocean temperature in the WCBTS survey, June 2018. Mean absolute errors are calculated across all data points in the respective set (n = 150 train, 25 test).", fig.pos="placeHere", fig.height=2.5}
+source("figures/figure_s4_comparison_bias.R")
+g
+```
+
+\break  
+
+```{r fig-s5, echo=FALSE, fig.cap = "Mean standard errors of predictions for models of ocean temperature in the WCBTS survey, June 2018. Estimates are shown for each held out trawl in the test set.",fig.pos="placeHere"}
+source("figures/figure_s5_comparison_se_trawl.R")
+g
+```
+
+\break  
+
+```{r fig-s6, echo=FALSE, fig.cap = "Mean absolute errors of predictions for models of ocean temperature in the WCBTS survey, June 2018. Estimates are shown for each held out trawl in the test set.", fig.pos="placeHere"}
+source("figures/figure_s6_comparison_bias_trawl.R")
+g
+```
+
+\break  
+
+
+```{r fig-s7, echo=FALSE, fig.cap = "Predictive density calculated with Leave One Out Cross Validation (LOOCV) and the the conditional predictive ordinate (CPO), using sampled temperature from the June 2018 WCBTS survey. Estimates are shown for a subset of cutoff distances evaluated (x-axis).", fig.pos="placeHere"}
+source("figures/figure_s5_temp_cpo_loocv.R")
+g
+```
+
+\break  
+
+```{r fig-s8, echo=FALSE, fig.cap = "Out of sample predictive density for Dover Sole presence-absence models, as a function of cutoff distance (km) and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"}
+source("figures/figure_s6_binomial_dover_spatialCV.R")
+g1
+```
+
+\break  
+
+<!-- \break   -->
+<!-- \redundant   -->
+<!-- ```{r fig-s7, echo=FALSE, fig.cap = "Out of sample predictive density for Dover Sole presence-absence models, as a function of cutoff distance (km) and number of spatial blocks used for 40-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"} -->
+<!-- source("figures/figure_s6_binomial_dover_spatialCV.R") -->
+<!-- g2 -->
+<!-- ``` -->
+
+<!-- # ```{r fig-s1, echo=FALSE, fig.cap = "Gamma predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"} -->
+<!-- # source("figures/figure_S1_gamma_dens_4species.R") -->
+<!-- # gridExtra::grid.arrange(g1,g2) -->
+<!-- # ``` -->
+
+<!-- # ```{r fig-s2, echo=FALSE, fig.cap = "Global intercepts (and 95% CIs) for four species from the WCBTS survey, using the Gamma positive model, as a function of number of knots (using cutoff values from 3-120km)", fig.pos="placeHere"} -->
+<!-- # source("figures/figure_S2_gamma_intercepts_4spp.R") -->
+<!-- # g1 -->
+<!-- # ``` -->
+
+```{r fig-s9, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA.", fig.pos="placeHere"}
+source("figures/figure_tmb_binom.R")
+g1
+```
+
+\break  
+
+```{r fig-s10, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}  
+ 
+source("figures/figure_priors.R")
+grid::grid.draw(final_fig)  
+```
+  
+<!-- \break   -->
+
+<!-- ```{r fig5, echo=FALSE, fig.cap = "Estimates of the Matérn range and spatial scale, along with standard deviations for each parameter, across four species in the WCBTS survey. Cutoff values from 3-120km are shown. ", fig.height=7, fig.pos="placeHere"} -->
+<!-- source("figures/figure_05_range_v_knots.R") -->
+<!-- gridExtra::grid.arrange(g1,g2,g3,g4,ncol=1) -->
+<!-- ``` -->

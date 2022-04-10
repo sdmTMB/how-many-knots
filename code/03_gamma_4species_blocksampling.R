@@ -17,7 +17,7 @@ catch <- readRDS("data/catch_cleaned.rds")
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(10),
+  "blocks" = c(20,40),
   "species" = unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA,
@@ -57,21 +57,21 @@ for (i in 1:nrow(df)) {
   )
 
   n_folds <- 10
-  haul_new$fold = rep(1:n_folds, 80)[1:nrow(haul_new)]
+  n_blocks <- df$blocks[i]
   # first assign blocks
-  # haul_new$fold <- NULL
-  # haul_new$block <- 1
-  # for (jj in 1:n_blocks) {
-  #   haul_new$block[which(haul_new$latitude < quantile(haul_new$latitude, 1 - jj * (1 / n_blocks)))] <- jj + 1
-  # }
-  # # now assign folds
-  # block_fold <- data.frame(
-  #   "block" = 1:n_blocks,
-  #   "fold" = rep(1:n_folds, n_blocks / n_folds)
-  # )
-  # haul_new <- dplyr::left_join(as.data.frame(haul_new), block_fold)
-  # # return to SpatialPointsDataFrame
-  #coordinates(haul_new) <- c("X", "Y")
+  haul_new$fold <- NULL
+  haul_new$block <- 1
+  for (jj in 1:n_blocks) {
+    haul_new$block[which(haul_new$latitude < quantile(haul_new$latitude, 1 - jj * (1 / n_blocks)))] <- jj + 1
+  }
+  # now assign folds
+  block_fold <- data.frame(
+    "block" = 1:n_blocks,
+    "fold" = rep(1:n_folds, n_blocks / n_folds)
+  )
+  haul_new <- dplyr::left_join(as.data.frame(haul_new), block_fold)
+  # return to SpatialPointsDataFrame
+  coordinates(haul_new) <- c("X", "Y")
 
   # create mesh
   mesh <- inla.mesh.2d(
@@ -101,7 +101,6 @@ for (i in 1:nrow(df)) {
   haul_new$pred <- NA
   haul_new$predtrain <- NA
   fold_ll <- 0
-  fold_ll_train <- 0
   for (k in 1:max(haul_new$fold)) {
     fit_train <- try(bru(components,
       haul_new[which(haul_new$fold != k), ],
@@ -149,7 +148,7 @@ for (i in 1:nrow(df)) {
   # calculate total log density
   df$dens_ll[i] <- sum(fold_ll)
   df$dens_ll_train[i] <- fold_ll_train[1]
-  saveRDS(df, file = "output/03_gamma_dens_4species_random.rds")
+  saveRDS(df, file = "output/03_gamma_dens_4species.rds")
 }
 
 if(run) {

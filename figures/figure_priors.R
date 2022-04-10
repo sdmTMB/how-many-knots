@@ -215,15 +215,15 @@ col_1 <- ggpubr::annotate_figure(gridExtra::arrangeGrob(g1,g2,g3,g4,ncol=1),
                                  left = text_grob("Prior density", rot = 90,vjust = 2)
 )
 col_2 <- ggpubr::annotate_figure(gridExtra::arrangeGrob(p1,p2,p3,p4,ncol=1),
-                                 left = text_grob("Out of sample predictive density", rot = 90, vjust=2)
+                                 left = text_grob("Log density (test)", rot = 90, vjust=2)
 )
 
 final_fig <- gridExtra::arrangeGrob(col_1,col_2,ncol=2)
-
-pdf("figures/Figure_S5.pdf")
-final_fig
-dev.off()
-
-jpeg("figures/Figure_S5.jpeg")
-final_fig
-dev.off()
+# 
+# pdf("figures/Figure_S5.pdf")
+# final_fig
+# dev.off()
+# 
+# jpeg("figures/Figure_S5.jpeg")
+# final_fig
+# dev.off()
