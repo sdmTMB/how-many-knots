@@ -21,6 +21,7 @@ df <- expand.grid(
 set.seed(2021)
 
 for (i in 1:nrow(df)) {
+
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
 
   # Join catch and haul data
@@ -86,8 +87,6 @@ for (i in 1:nrow(df)) {
     data = haul_df,
     mesh = mesh_sdmTMB,
     parallel = TRUE,
-    spatial = "on",
-    spatiotemporal = "off",
     fold_ids = haul_df$fold,
     family = binomial(link = "logit"),
     priors = sdmTMBpriors(
@@ -99,15 +98,15 @@ for (i in 1:nrow(df)) {
   )
   
   # compare to inlabru
-  # matern <-
-  #   inla.spde2.pcmatern(mesh,
-  #                       prior.sigma = c(5, 0.05),
-  #                       prior.range = c(20, 0.05)
-  #   )
-  # components <- present ~ Intercept + log_depth_scaled + log_depth_scaled2 + field(
-  #   main = coordinates,
-  #   model = matern
-  # )
+  matern <-
+     inla.spde2.pcmatern(mesh,
+                         prior.sigma = c(5, 0.05),
+                         prior.range = c(20, 0.05)
+     )
+  components <- present ~ 1 + log_depth_scaled + log_depth_scaled2 + field( 
+     main = coordinates,
+     model = matern
+  )
   # fit_train <- try(bru(components,
   #                      haul_new[which(haul_new$fold != 1), ],
   #                      family = "binomial"
@@ -119,8 +118,46 @@ for (i in 1:nrow(df)) {
   # pred_p <- plogis(pred_test$mean)
   # cor(fit$data$cv_predicted[which(fit$data$fold==1)], pred_p)
   # 
+  haul_new$pred <- NA
+  haul_new$predtrain <- NA
+  for (k in 1:max(haul_new$fold)) {
+    # hold out kth fold
+    fit_train <- try(bru(components,
+                         haul_new[which(haul_new$fold != k), ],
+                         family = "binomial"
+    ), silent = TRUE)
+    test_indx <- which(haul_new$fold == k)
+    # if model didn't have problems
+    if (class(fit_train)[1] == "bru") {
+      if (fit_train$ok == TRUE) {
+        # predict to kth fold
+        pred_test <- predict(fit_train,
+                             data = haul_new[test_indx, , drop = FALSE],
+                             formula = ~ 1 + log_depth_scaled + log_depth_scaled2 + field
+        )
+        haul_new$pred[test_indx] <- pred_test$mean
+        
+        if (k == 1) {
+          # for LL of training data, save est from fold # 1
+          pred_train <- predict(fit_train,
+                                data = haul_new[which(haul_new$fold != k), ],
+                                formula = ~ 1 + log_depth_scaled + log_depth_scaled2 + field
+          )
+          haul_new$predtrain[which(haul_new$fold != k)] <- pred_train$mean
+        }
+      } else {
+        # model had issues, didn't converge
+        haul_new$pred[test_indx] <- NA
+        
+        if (k == 1) {
+          haul_new$predtrain[which(haul_new$fold != k)] <- NA
+        }
+      }
+    }
+  }
+  
   df$dens_ll[i] <- fit$sum_loglik
-  saveRDS(df, "output/08_binom_dens_4species_TMB.rds")
+  
 }
 
 plan(sequential)

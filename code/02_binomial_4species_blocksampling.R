@@ -90,7 +90,7 @@ for (i in 1:nrow(df)) {
       prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
-  components <- present ~ Intercept + log_depth_scaled + log_depth_scaled2 + field(
+  components <- present ~ Intercept(1) + log_depth_scaled + log_depth_scaled2 + field(
     main = coordinates,
     model = matern
   )

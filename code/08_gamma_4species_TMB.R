@@ -35,13 +35,14 @@ for (i in 1:nrow(df)) {
       cpue_kg_km2
     )
   # Set NA CPUEs to 0
-  haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
-
+  #haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
+  haul_new <- dplyr::filter(haul_new, cpue_kg_km2>0)
+  
   # convert coordinates to km
   haul_new$X <- haul_new$X / 1000
   haul_new$Y <- haul_new$Y / 1000
   # create occurrence field
-  haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
+  #haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
   coordinates(haul_new) <- c("X", "Y")
 
   # create boundary, same for all meshes
@@ -82,14 +83,14 @@ for (i in 1:nrow(df)) {
   mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), mesh = mesh)
   
   fit <- sdmTMB::sdmTMB_cv(
-    formula = present ~ log_depth_scaled + log_depth_scaled2,
+    formula = cpue_kg_km2 ~ log_depth_scaled + log_depth_scaled2,
     data = haul_df,
     mesh = mesh_sdmTMB,
     parallel = TRUE,
     spatial = "on",
     spatiotemporal = "off",
     fold_ids = haul_df$fold,
-    family = binomial(link = "logit"),
+    family = Gamma(link = "log"),
     priors = sdmTMBpriors(
       matern_s = pc_matern(
         range_gt = 5, range_prob = 0.05,
@@ -120,7 +121,7 @@ for (i in 1:nrow(df)) {
   # cor(fit$data$cv_predicted[which(fit$data$fold==1)], pred_p)
   # 
   df$dens_ll[i] <- fit$sum_loglik
-  saveRDS(df, "output/08_binom_dens_4species_TMB.rds")
+  saveRDS(df, "output/08_gamma_dens_4species_TMB.rds")
 }
 
 plan(sequential)

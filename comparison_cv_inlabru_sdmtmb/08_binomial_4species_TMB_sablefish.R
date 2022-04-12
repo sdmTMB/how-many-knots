@@ -12,8 +12,8 @@ catch <- readRDS("data/catch_cleaned.rds")
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(20),
-  "species" = unique(catch$common_name),
+  "blocks" = c(10),
+  "species" = "sablefish",#unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA
 )
@@ -86,8 +86,8 @@ for (i in 1:nrow(df)) {
     data = haul_df,
     mesh = mesh_sdmTMB,
     parallel = TRUE,
-    spatial = "on",
-    spatiotemporal = "off",
+    spatial="on",
+    spatiotemporal="off",
     fold_ids = haul_df$fold,
     family = binomial(link = "logit"),
     priors = sdmTMBpriors(
@@ -120,6 +120,7 @@ for (i in 1:nrow(df)) {
   # cor(fit$data$cv_predicted[which(fit$data$fold==1)], pred_p)
   # 
   df$dens_ll[i] <- fit$sum_loglik
+  saveRDS(fit,paste0("output/model_",i,".rds"))
   saveRDS(df, "output/08_binom_dens_4species_TMB.rds")
 }
 

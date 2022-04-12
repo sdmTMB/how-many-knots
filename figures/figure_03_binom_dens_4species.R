@@ -7,7 +7,7 @@ df_bin$blocks = "Random"
 # block cross validation
 df_bin_block <- readRDS("output/02_binom_dens_4species.rds")
 df_bin = rbind(df_bin, df_bin_block)
-
+df_bin = dplyr::filter(df_bin, n <= 500)
 df_bin$species <- as.character(df_bin$species)
 df_bin$species[which(df_bin$species == "dover sole")] <- "Dover Sole"
 df_bin$species[which(df_bin$species == "petrale sole")] <- "Petrale Sole"
@@ -35,7 +35,8 @@ g1 <- ggplot(df_bin, aes(cutoff, dens_ll_train, group=Blocks, col=Blocks)) +
   theme(strip.text.x = element_text(size = 7)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
   scale_color_viridis_d(end=0.7) + 
-  theme(axis.text.y = element_text(angle = 90))
+  theme(axis.text.y = element_text(angle = 90)) + 
+  geom_smooth(se=FALSE,size=0.3)
 
 g2 <- ggplot(df_bin, aes(cutoff, dens_ll, group=Blocks, col=Blocks)) +
   geom_point(size = 2, alpha = 0.5) +
@@ -48,7 +49,8 @@ g2 <- ggplot(df_bin, aes(cutoff, dens_ll, group=Blocks, col=Blocks)) +
   theme(strip.text.x = element_text(size = 7)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
   scale_color_viridis_d(end=0.7) + 
-  theme(axis.text.y = element_text(angle = 90))
+  theme(axis.text.y = element_text(angle = 90)) + 
+  geom_smooth(se=FALSE,size=0.3)
 #pdf("test.pdf")
 g = ggarrange(g1, g2, ncol=1,common.legend=TRUE)
 #dev.off()

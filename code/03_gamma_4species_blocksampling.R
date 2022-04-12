@@ -92,7 +92,7 @@ for (i in 1:nrow(df)) {
       prior.range = c(20, 0.05)
     )
   # components is equivalent to formula
-  components <- cpue_kg_km2 ~ Intercept + log_depth_scaled + log_depth_scaled2 + field(
+  components <- cpue_kg_km2 ~ Intercept(1) + log_depth_scaled + log_depth_scaled2 + field(
     main = coordinates,
     model = matern
   )
@@ -101,6 +101,7 @@ for (i in 1:nrow(df)) {
   haul_new$pred <- NA
   haul_new$predtrain <- NA
   fold_ll <- 0
+  fold_ll_train <- 0
   for (k in 1:max(haul_new$fold)) {
     fit_train <- try(bru(components,
       haul_new[which(haul_new$fold != k), ],
