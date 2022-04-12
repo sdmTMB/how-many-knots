@@ -21,7 +21,8 @@ df <- expand.grid(
   "species" = unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA,
-  "dens_ll_train" = NA
+  "dens_ll_train" = NA,
+  "pred_se" = NA
 )
 
 set.seed(2021)
@@ -99,6 +100,7 @@ for (i in 1:nrow(df)) {
 
   # do cross validation here
   haul_new$pred <- NA
+  haul_new$pred_se <- NA
   haul_new$predtrain <- NA
   fold_ll <- 0
   fold_ll_train <- 0
@@ -116,6 +118,7 @@ for (i in 1:nrow(df)) {
           formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field 
         )
         haul_new$pred[test_indx] <- pred_test$mean
+        haul_new$pred_se[test_indx] <- pred_test$sd
         if (k == 1) {
           pred_train <- predict(fit_train,
                                 data = haul_new[which(haul_new$fold != k), ],
@@ -149,6 +152,7 @@ for (i in 1:nrow(df)) {
   # calculate total log density
   df$dens_ll[i] <- sum(fold_ll)
   df$dens_ll_train[i] <- fold_ll_train[1]
+  df$pred_se[i] <- mean(haul_new$pred_se,na.rm=T)
   saveRDS(df, file = "output/03_gamma_dens_4species.rds")
 }
 

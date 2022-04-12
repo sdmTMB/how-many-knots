@@ -19,7 +19,8 @@ df <- expand.grid(
   "species" = unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA,
-  "dens_ll_train" = NA
+  "dens_ll_train" = NA,
+  "pred_se" = NA
 )
 
 set.seed(2021)
@@ -97,6 +98,7 @@ for (i in 1:nrow(df)) {
 
   # do cross validation here
   haul_new$pred <- NA
+  haul_new$pred_se <- NA
   haul_new$predtrain <- NA
   for (k in 1:max(haul_new$fold)) {
     fit_train <- try(bru(components,
@@ -112,7 +114,8 @@ for (i in 1:nrow(df)) {
           formula = ~ Intercept + log_depth_scaled + log_depth_scaled2 + field
         )
         haul_new$pred[test_indx] <- pred_test$mean
-
+        haul_new$pred_se[test_indx] <- pred_test$sd
+        
         if (k == 1) {
           pred_train <- predict(fit_train,
             data = haul_new[which(haul_new$fold != k), ],
@@ -147,6 +150,7 @@ for (i in 1:nrow(df)) {
       prob = plogis(haul_new$predtrain),
       log = TRUE
     ), na.rm = T)
+  df$pred_se[i] <- mean(haul_new$pred_se,na.rm=T)
   saveRDS(df, "output/02_binom_dens_4species.rds")
   
 }
