@@ -10,7 +10,7 @@ plan(multisession)
 
 haul <- readRDS("data/haul_cleaned.rds")
 catch <- readRDS("data/catch_cleaned.rds")
-
+catch = dplyr::filter(catch, year==2018)
 # species are dover sole, sablefish, petrale sole, lingcod, darkblotched rockfish
 # g = group_by(catch, common_name) %>% dplyr::summarise(p = sum(present)) %>% dplyr::arrange(-p)
 

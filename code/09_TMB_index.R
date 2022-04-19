@@ -6,9 +6,8 @@ is_unix <- .Platform$OS.type == "unix"
 library(future)
 if (is_rstudio || !is_unix) plan(multisession) else plan(multicore)
 
-haul <- readRDS("data/haul_all_cleaned.rds")
-catch <- readRDS("data/catch_all_cleaned.rds")
-catch$year <- as.numeric(substr(catch$date,1,4))
+haul <- readRDS("data/haul_cleaned.rds")
+catch <- readRDS("data/catch_cleaned.rds")
 
 # initial loop over the cutoff values
 df <- expand.grid(
@@ -145,8 +144,8 @@ pred_grid$year = pred_grid$year
 #pred_grid$time = as.numeric(pred_grid$year) - floor(mean(unique(as.numeric(pred_grid$year))))
 
 index = list() # list for indices
-for(i in 1:nrow(index_models)){
-  
+#for(i in 1:nrow(index_models)){
+for(i in c(1,2,4,5)) {  
   catch_sub <- dplyr::filter(catch, common_name == index_models$species[i])
   
   # Join catch and haul data

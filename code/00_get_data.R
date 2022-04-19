@@ -7,7 +7,7 @@ library(sp)
 # Prepare data
 # haul data includes environmental covariates with location information
 haul <- nwfscSurvey::PullHaul.fn(
-  YearRange = c(2018),
+  #YearRange = c(2018),
   SurveyName = "NWFSC.Combo"
 )
 
@@ -36,7 +36,7 @@ haul$log_depth_scaled2 <- haul$log_depth_scaled^2
 
 # catch data includes catch, effort, etc. This takes a few minutes to grab all ~ 900 spp
 catch <- nwfscSurvey::PullCatch.fn(
-  YearRange = c(2018),
+  #YearRange = c(2018),
   SurveyName = "NWFSC.Combo"
 )
 # format to later join catch and haul
@@ -81,7 +81,8 @@ saveRDS(sub, "data/catch_cleaned.rds")
 
 
 # create temperature dataset
-trawlid_date <- dplyr::group_by(sub, trawl_id) %>%
+trawlid_date <- dplyr::filter(sub, year==2018)
+  dplyr::group_by(sub, trawl_id) %>%
   dplyr::summarize(date = date[1])
 trawlid_date$month <- substr(trawlid_date$date, 6, 8)
 trawlid_date <- dplyr::filter(trawlid_date, month == "Jun")

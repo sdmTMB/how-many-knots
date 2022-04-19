@@ -10,6 +10,7 @@ library(future)
 plan(multisession)
 
 dover <- readRDS("data/doversole_cleaned.rds")
+dover = dplyr::filter(dover, year==2018)
 # convert coordinates to km
 dover$X <- dover$X / 1000
 dover$Y <- dover$Y / 1000
