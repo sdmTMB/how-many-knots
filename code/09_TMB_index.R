@@ -143,9 +143,9 @@ pred_grid = dplyr::left_join(pred_grid, grid)
 pred_grid$year = pred_grid$year
 #pred_grid$time = as.numeric(pred_grid$year) - floor(mean(unique(as.numeric(pred_grid$year))))
 
-index = list() # list for indices
+
 #for(i in 1:nrow(index_models)){
-for(i in c(1,2,4,5)) {  
+for(i in 5:6) {  
   catch_sub <- dplyr::filter(catch, common_name == index_models$species[i])
   
   # Join catch and haul data
@@ -208,9 +208,32 @@ for(i in c(1,2,4,5)) {
   #mean_null <- apply(null_predictions, 1, mean)
   #sd_null <- apply(null_predictions, 1, sd)
   #null_predictions_summ[[i]] <- cbind(mean_null, sd_null)
-  index[[i]] <- get_index_sims(predictions)
-
+  index <- get_index_sims(predictions)
+  index$cutoff <- index_models$cutoff[i]
+  index$n <- index_models$n[i]
+  index$species <- index_models$species[i]
+  if(i==1) {
+    all_indices <- index
+  } else {
+    all_indices <- rbind(all_indices, index)
+  }
 }
 
+saveRDS(all_indices, "output/estimated_indices.rds")
 
+all_indices$cutoff = as.factor(all_indices$cutoff)
 
+pdf("indices_ses.pdf")
+p1 <- all_indices %>%
+  ggplot(aes(year, log_est,group=cutoff, col=cutoff, fill=cutoff)) + 
+  geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
+  geom_line() + 
+  facet_wrap(~species,scale="free",ncol=1) + ylab("Log est +/- 2SE")
+  
+p2 <- all_indices %>%
+  ggplot(aes(year, se,group=cutoff, col=cutoff, fill=cutoff)) + 
+  #geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
+  geom_line() + 
+  facet_wrap(~species,scale="free",ncol=1) + ylab("SEs")
+gridExtra::grid.arrange(p1,p2,ncol=2)
+dev.off()
