@@ -223,7 +223,23 @@ saveRDS(all_indices, "output/estimated_indices.rds")
 
 all_indices$cutoff = as.factor(all_indices$cutoff)
 
-pdf("indices_ses.pdf")
+
+pdf("figures/indices.pdf")
+p1 <- all_indices %>%
+  ggplot(aes(year, est,group=cutoff, col=cutoff, fill=cutoff)) + 
+  geom_ribbon(aes(ymin=lwr, ymax=upr), alpha=0.3, col=NA) + 
+  geom_line() + 
+  facet_wrap(~species,scale="free",ncol=1) + ylab("Est +/- 2SE")
+p1
+# p2 <- all_indices %>%
+#   ggplot(aes(year, se,group=cutoff, col=cutoff, fill=cutoff)) + 
+#   #geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
+#   geom_line() + 
+#   facet_wrap(~species,scale="free",ncol=1) + ylab("SEs")
+# gridExtra::grid.arrange(p1,p2,ncol=2)
+dev.off()
+
+pdf("figures/indices_ses_log.pdf")
 p1 <- all_indices %>%
   ggplot(aes(year, log_est,group=cutoff, col=cutoff, fill=cutoff)) + 
   geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
