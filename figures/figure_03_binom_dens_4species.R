@@ -42,7 +42,7 @@ g2 <- ggplot(df_bin, aes(cutoff, dens_ll, group=Blocks, col=Blocks)) +
   geom_point(size = 2, alpha = 0.5) +
   # geom_smooth() +
   theme_bw() +
-  facet_wrap(~species, nrow = 1, scale="free") +
+  facet_wrap(~species, nrow = 2, scale="free") +
   xlab("Cutoff distance (km)") +
   ylab("Log density (test)") +
   theme(strip.background = element_rect(fill = "white")) +

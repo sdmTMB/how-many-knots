@@ -1,5 +1,6 @@
 library(INLA)
 library(dplyr)
+devtools::install_github("pbs-assess/sdmTMB")
 library(sdmTMB)
 is_rstudio <- !is.na(Sys.getenv("RSTUDIO", unset = NA))
 is_unix <- .Platform$OS.type == "unix"
@@ -144,8 +145,8 @@ pred_grid$year = pred_grid$year
 #pred_grid$time = as.numeric(pred_grid$year) - floor(mean(unique(as.numeric(pred_grid$year))))
 
 
-#for(i in 1:nrow(index_models)){
-for(i in 5:6) {  
+for(i in 1:nrow(index_models)){
+#for(i in 1:6) {  
   catch_sub <- dplyr::filter(catch, common_name == index_models$species[i])
   
   # Join catch and haul data
@@ -204,11 +205,18 @@ for(i in 5:6) {
     )
   )
   
-  predictions <- predict(fit, newdata = pred_grid, sims = 500)
+  #predictions <- predict(fit, newdata = pred_grid, sims = 500)
+  #index <- get_index_sims(predictions) # to be used for index sims
+  
+  predictions <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+  index <- get_index(predictions, bias_correct = TRUE)
+  
   #mean_null <- apply(null_predictions, 1, mean)
   #sd_null <- apply(null_predictions, 1, sd)
   #null_predictions_summ[[i]] <- cbind(mean_null, sd_null)
-  index <- get_index_sims(predictions)
+  
+  
+  #
   index$cutoff <- index_models$cutoff[i]
   index$n <- index_models$n[i]
   index$species <- index_models$species[i]
@@ -219,18 +227,27 @@ for(i in 5:6) {
   }
 }
 
-saveRDS(all_indices, "output/estimated_indices.rds")
+saveRDS(all_indices, "output/estimated_indices_biascorrect.rds")
 
 all_indices$cutoff = as.factor(all_indices$cutoff)
 
 
-pdf("figures/indices.pdf")
+pdf("figures/indices_bias.pdf")
 p1 <- all_indices %>%
   ggplot(aes(year, est,group=cutoff, col=cutoff, fill=cutoff)) + 
   geom_ribbon(aes(ymin=lwr, ymax=upr), alpha=0.3, col=NA) + 
   geom_line() + 
-  facet_wrap(~species,scale="free",ncol=1) + ylab("Est +/- 2SE")
+  facet_wrap(~species,scale="free",ncol=2) + 
+  ylab("Est +/- 2SE") + 
+  theme_bw() + 
+  #theme(strip.background =element_rect(fill="white"),
+  #      text=element_text(size=20),
+  #      strip.text.x = element_text(size = 12)) + 
+  xlab("Year")#+ 
+  #theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
 p1
+#dev.off()
 # p2 <- all_indices %>%
 #   ggplot(aes(year, se,group=cutoff, col=cutoff, fill=cutoff)) + 
 #   #geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
@@ -239,7 +256,7 @@ p1
 # gridExtra::grid.arrange(p1,p2,ncol=2)
 dev.off()
 
-pdf("figures/indices_ses_log.pdf")
+pdf("figures/indices_ses_log_bias.pdf")
 p1 <- all_indices %>%
   ggplot(aes(year, log_est,group=cutoff, col=cutoff, fill=cutoff)) + 
   geom_ribbon(aes(ymin=log_est-2*se, ymax=log_est+2*se), alpha=0.3, col=NA) + 
