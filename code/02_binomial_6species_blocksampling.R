@@ -152,7 +152,7 @@ for (i in 1:nrow(df)) {
       log = TRUE
     ), na.rm = T)
   df$pred_se[i] <- mean(haul_new$pred_se,na.rm=T)
-  saveRDS(df, "output/02_binom_dens_4species.rds")
+  saveRDS(df, "output/02_binom_dens_6species_block.rds")
   
 }
 
@@ -162,18 +162,20 @@ if(run) {
   # don't do full CV, just hold 1 block out
 for (i in 1:nrow(df)) {
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
-
+  
   # Join catch and haul data
   haul_new <- haul %>%
+    dplyr::filter(trawl_id %in% catch$trawl_id) %>%
     left_join(catch_sub, by = "trawl_id") %>%
-    select(trawl_id, X, Y,
-      latitude = latitude_dd.x,
-      longitude = longitude_dd.x,
-      year = year,
-      log_depth_scaled,
-      log_depth_scaled2,
-      cpue_kg_km2
+    dplyr::select(trawl_id, X, Y,
+                  latitude = latitude_dd.x,
+                  longitude = longitude_dd.x,
+                  year = year,
+                  log_depth_scaled,
+                  log_depth_scaled2,
+                  cpue_kg_km2
     )
+  
   # Set NA CPUEs to 0
   haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
 
@@ -261,6 +263,6 @@ for (i in 1:nrow(df)) {
       prob = plogis(haul_new$predtrain),
       log = TRUE
     ), na.rm = T)
-  saveRDS(df, "output/02_binom_dens_4species.rds")
+  saveRDS(df, "output/02_binom_dens_4species_train.rds")
 }
 }
