@@ -15,7 +15,7 @@ catch = dplyr::filter(catch, year==2018)
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(20, 40),
+  "blocks" = c(10,20),
   "species" = unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA,
@@ -31,6 +31,7 @@ for (i in 1:nrow(df)) {
 
   # Join catch and haul data
   haul_new <- haul %>%
+    dplyr::filter(trawl_id %in% catch$trawl_id) %>%
     left_join(catch_sub, by = "trawl_id") %>%
     dplyr::select(trawl_id, X, Y,
       latitude = latitude_dd.x,

@@ -148,11 +148,7 @@ g1
 
 \break  
 
-```{r fig-s10, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}  
- 
-source("figures/figure_priors.R")
-grid::grid.draw(final_fig)  
-```
+
   
 <!-- \break   -->
 

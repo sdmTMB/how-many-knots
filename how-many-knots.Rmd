@@ -91,21 +91,21 @@ Penalized complexity priors were used on the Matérn covariance parameters [@sim
 
 ### Quantifying performance  
 
-As a sensitivity to the choice of sampling, we used two cross-validation approaches to evaluate out of sample predictions. Observations were first split with 25 observations randomly assigned to the test set (reserving n = 150 for training the model, and the same test and training data for all meshes). As a second split, we applied true Leave-One-Out Cross-Validation (LOOCV), with each observation alternatively held out as the test set. 
-
-To quantify the predictive performance of models with alternative mesh configurations, we considered several of out of sample predictive performance statistics.
+Observations were randomly assigned to training and test sets (25 observations used for testing, and the same test and training data used for all meshes). As sensitivity analysis, we also applied true Leave-One-Out Cross-Validation (LOOCV), with each observation alternatively held out as the test set. To quantify the predictive performance of models with alternative mesh configurations, we considered several of out of sample predictive performance statistics.
 We first applied the conditional predictive ordinate (CPO, [@pettit1990]), which is an approximation to the LOOCV.  The total predictive log density can be represented as the sum of individual log posterior probabilities, $\sum_{i=1}^{n} \log[P(Y_{i}|Y_{\neq i})]$, where $P(Y_{i}|Y_{\neq i})$ is the probability of test data $i$.
 Because conducting true leave-one-out cross-validation may be prohibitive for large datasets, INLA uses CPO to approximate the out of sample posterior probability for each observation.
 Previous research has shown that the CPO approximation performs similarly to MCMC cross-validation [@held_posterior_2010], yet it is less clear whether CPO is similar to true cross-validation in comparing mesh resolution. For comparison, we calculated the total CPO score across a range of cutoff values, and compared these results to the true predictive density using LOOCV. For our comparison using a larger test set (25 observations), we calculated the predictive log density for each observation. Additional metrics, including the bias and standard error associated with each prediction were also used for comparisons.
 
 ### Modeling species occurrence and catch rates
 
-As a more complicated example, we constructed a case study focused on modeling groundfish densities from the WCBTS survey. As data collected by the WCBTS and other marine surveys are both zero-inflated and have positively skewed catch rates, conventional approaches to analyzing these data have used a delta or hurdle model to separately model occurrence and positive catches [e.g., @johnson_investigating_2019; @thorson_guidance_2019].
-We adopt a similar approach in our modeling, using a binomial distribution with a logit link to model species occurrence, and a Gamma distribution with a log link to model positive catch rates (kg per km2). For consistency with recent research using these data [@@johnson_investigating_2019], we applied the same model used for bottom temperature; this consisted of an estimated intercept, quadratic effect of depth, and estimated spatial field. Though the WCBTS survey collects data on hundreds of marine fishes, we limited our analysis to 6 species that are of interest to fishery managers, and that represent a range of distribution and occurrence (Table S1; Figs. S1--S2). 
+As a more complicated example, we constructed a case study focused on modeling groundfish occurrence from the WCBTS survey. As data collected by the WCBTS and other marine surveys are both zero-inflated and have positively skewed catch rates, conventional approaches to analyzing these data have used a delta or hurdle model to separately model occurrence and positive catches [e.g., @johnson_investigating_2019; @thorson_guidance_2019].
+We adopt a similar approach, but just focus on the presence-absence model. For consistency with recent fisheries research using these data [@@johnson_investigating_2019], we applied the same model used in the temperature example; this consisted of an estimated intercept, quadratic effect of depth, and estimated spatial field. Though the WCBTS survey collects data on hundreds of marine fishes, we limited our analysis to 6 species that are of interest to fishery managers, and that represent a range of distribution and occurrence (Table S1; Figs. S1--S2). 
 
-We constructed 20 alternative meshes using cutoff values ranging from 3--120km for each combination of species and hurdle sub-model. Meshes varied slightly by species and sub-model, but this range of cutoff values resulted in meshes ranging in size from 75--1348 knots. High-resolution meshes with more knots than observations were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
+We constructed 20 alternative meshes using cutoff values ranging from 3--120km for each species. Meshes varied slightly by species, but this range of cutoff values resulted in meshes ranging in size from 75--1348 knots. High-resolution meshes with more knots than observations were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
 
-To further evaluate interactions between mesh resolution and fold assignments for cross-validation, we varied how data were split into training and test sets to evaluate model performance. We used 10-fold cross-validation for all comparison, and considered three alternative splits of the data. Recent work has demonstrated that for spatially structured data, creating random folds that ignore spatial autocorrelation may bias results [@valavi_blockcv_2019]. Given the WCBTS survey is nearly 1-dimensional along a latitudinal gradient [@keller_northwest_2017] (Figure 1), we used latitude quantiles to divide the WCBTS survey domain into blocks (n = 20, 40) with folds assigned continuously to blocks. As a third split, we assigned observations randomly to folds, ignoring spatial structure. Additional blocking strategies, using the 'blockCV' package in R [@valavi_blockcv_2019] were also considered. Model performance was evaluated by calculating the predictive log density for each fold, using either the binomial or Gamma densities, and total predictive densities were calculated by summing across folds. To contrast the out of sample predictive performance with fit to the training data, we also calculated the log likelihood of the training data. As with our spatial models of ocean temperature, groundfish models were fit using inlabru [@bachl_inlabru_2019].
+### Sensitivity to fold assignments
+
+To further evaluate interactions between mesh resolution and fold assignments when doing cross-validation, we varied how data were split into training and test sets to evaluate model performance. We used 10-fold cross-validation for all comparisons, and considered three alternative splits of the data. Recent work has demonstrated that for spatially structured data, creating random folds that ignore spatial autocorrelation may bias results [@valavi_blockcv_2019]. Given the WCBTS survey is nearly 1-dimensional along a latitudinal gradient [@keller_northwest_2017] (Figure 1), we first used latitude quantiles to divide the WCBTS survey domain into blocks (n = 10, 20) with blocks assigned continuously to folds. As a second approach, we assigned observations to folds using the 'blockCV' package in R [@valavi_blockcv_2019]. For each cutoff distance, we varied the spatial range separating training and test data from 25 -- 150km (points beyond this distance are allowed to be used as training data for a focal observation). As a third split, we assigned observations randomly to folds, ignoring spatial structure. Model performance was evaluated by calculating the predictive log density for each fold, and total predictive densities were calculated by summing across folds. To contrast the out of sample predictive performance with fit to the training data, we also calculated the log density of the training data. As with our spatial models of ocean temperature, groundfish models were fit using inlabru [@bachl_inlabru_2019].
 <!--
 Something a reviewer could get fussy about is that these blocks are not exactly the same size. I don't think it matters much, because with the first couple iterations I used `blockCV` to sample
 -->
@@ -116,7 +116,7 @@ Something a reviewer could get fussy about is that these blocks are not exactly 
 
 ### Sensitivity to priors and estimation methods
 
-Finally, we used our groundfish examples to explore the robustness of predictive performance via cross-validation to the choice of hyperparameters for the PC priors (Matérn $\kappa$ and $\sigma_{\omega}$). Rather than do a prior sensitivity across all species and sub-models, we only used the Dover Sole presence-absence sub-model. The PC prior on $\sigma_{\omega}$ is to specify the threshold and upper tail probability, $Pr(\sigma_{\omega} > \sigma_{0}) = \theta_{\sigma}$. In addition to the original values ($\sigma_{0}$ = 5, $\theta_{\sigma}$ = 0.05), we examined alternative values of $\sigma_{0}$ = (1, 10) and $\theta_{\sigma}$ = c(0.01, 0.1, 0.4). In contrast, the PC prior on $\kappa$ specifies the lower threshold and tail probability, $Pr(\kappa > \kappa_{0}) = \theta_{\kappa}$. We varied $\kappa_{0}$ (5, 20, 40) and $\theta_{\kappa}$ (0.01, 0.1, 0.4). For each combination of PC priors, we calculated the out of sample predictive density, using 10-fold cross-validation and the same latitudinal bands as in our first sensitivity analysis. 
+Finally, we used our groundfish examples to explore the robustness of predictive performance via cross-validation to the choice of hyperparameters for the PC priors (Matérn $\kappa$ and $\sigma_{\omega}$). Rather than do a prior sensitivity across all species and sub-models, we applied this sensitivity analysis to the Dover Sole presence-absence sub-model. The PC prior on $\sigma_{\omega}$ is to specify the threshold and upper tail probability, $Pr(\sigma_{\omega} > \sigma_{0}) = \theta_{\sigma}$. In addition to the original values ($\sigma_{0}$ = 5, $\theta_{\sigma}$ = 0.05), we examined alternative values of $\sigma_{0}$ = (1, 10) and $\theta_{\sigma}$ = c(0.01, 0.1, 0.4). In contrast, the PC prior on $\kappa$ specifies the lower threshold and tail probability, $Pr(\kappa > \kappa_{0}) = \theta_{\kappa}$. We varied $\kappa_{0}$ (5, 20, 40) and $\theta_{\kappa}$ (0.01, 0.1, 0.4). For each combination of PC priors, we calculated the out of sample predictive density, using 10-fold cross-validation and the same latitudinal bands as in our first sensitivity analysis. 
 
 We validated parameters estimates from our estimation with `inlabru` by also estimating the same models using TMB [@kristensen_tmb_2016]. Specifically, we performed estimation using the R package 'sdmTMB' [@anderson_2022], which uses INLA to create meshes, but takes advantage of autodifferentiation in TMB for faster maximum likelihood parameter estimation.
 
@@ -189,17 +189,22 @@ g
 source("figures/figure_03_binom_dens_4species.R")
 g
 ```  
-  
-```{r fig4, echo=FALSE, fig.cap = "Gamma predictive densities for catch rate models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). The in-sample predictive density is calculated holding out the first fold.", fig.pos="placeHere"}
-source("figures/figure_04_gamma_dens_4species.R")
-g
-```  
-  
-  
+
+<!-- ```{r fig4, echo=FALSE, fig.cap = "Gamma predictive densities for catch rate models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). The in-sample predictive density is calculated holding out the first fold.", fig.pos="placeHere"} -->
+<!-- source("figures/figure_04_gamma_dens_4species.R") -->
+<!-- g -->
+<!-- ```   -->
+
+
   
   
 \break  
 
+```{r fig4, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}  
+ 
+source("figures/figure_priors.R")
+grid::grid.draw(final_fig)  
+```
 <!-- \break   -->
 <!-- ```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"} -->
 <!-- source("figures/figure_03_binomial.R") -->

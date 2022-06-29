@@ -30,6 +30,7 @@ for (i in 1:nrow(df)) {
 
   # Join catch and haul data
   haul_new <- haul %>%
+    dplyr::filter(trawl_id %in% catch$trawl_id) %>% 
     left_join(catch_sub, by = "trawl_id") %>%
     dplyr::select(trawl_id, X, Y,
       latitude = latitude_dd.x,

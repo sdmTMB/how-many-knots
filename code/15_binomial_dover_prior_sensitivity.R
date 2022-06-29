@@ -47,10 +47,12 @@ df <- dplyr::left_join(df, priors)
 set.seed(2021)
 
 for (i in 1:nrow(df)) {
-  catch_sub <- dplyr::filter(catch, common_name == df$species[i])
+  catch_sub <- dplyr::filter(catch, common_name == df$species[i],
+                             year==2018)
 
   # Join catch and haul data
   haul_new <- haul %>%
+    dplyr::filter(trawl_id %in% catch_sub$trawl_id) %>% 
     left_join(catch_sub, by = "trawl_id") %>%
     select(trawl_id, X, Y,
       latitude = latitude_dd.x,

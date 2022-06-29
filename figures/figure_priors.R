@@ -46,11 +46,11 @@ d$prior.sigma_cutoff <- as.factor(d$prior.sigma_cutoff)
 
 p1 <- ggplot(
   d,
-  aes(n, dens_ll, col = prior.sigma_cutoff)
+  aes(cutoff, dens_ll, col = prior.sigma_cutoff)
 ) +
   geom_line(alpha=0.4) +
   #facet_wrap(~sensitivity, labeller = label_parsed) +
-  xlab("Knots") +
+  xlab(" ") +
   ylab("") +
   labs(col = expression(paste(sigma[0]))) +
   theme_bw() +
@@ -88,11 +88,11 @@ d$prior.sigma_thresh <- as.factor(d$prior.sigma_thresh)
 
 p2 <- ggplot(
   d,
-  aes(n, dens_ll, col = prior.sigma_thresh)
+  aes(cutoff, dens_ll, col = prior.sigma_thresh)
 ) +
   geom_line(alpha=0.4) +
   #facet_wrap(~sensitivity, labeller = label_parsed) +
-  xlab("Knots") +
+  xlab(" ") +
   ylab("") +
   #labs(col = expression(paste("Pr(", sigma, ") < ", sigma[0]))) +
   labs(col = expression(theta[sigma])) +
@@ -131,11 +131,11 @@ d$prior.range_cutoff <- as.factor(d$prior.range_cutoff)
 
 p3 <- ggplot(
   d,
-  aes(n, dens_ll, col = prior.range_cutoff)
+  aes(cutoff, dens_ll, col = prior.range_cutoff)
 ) +
   geom_line(alpha=0.4) +
   #facet_wrap(~sensitivity, labeller = label_parsed) +
-  xlab("Knots") +
+  xlab(" ") +
   ylab("") +
   labs(col = expression(paste(kappa[0]))) +
   theme_bw() +
@@ -174,11 +174,11 @@ d$range_p <- as.factor(d$prior.range_thresh)
 
 p4 <- ggplot(
   d,
-  aes(n, dens_ll, col = range_p)
+  aes(cutoff, dens_ll, col = range_p)
 ) +
   geom_line(alpha=0.4) +
   #facet_wrap(~sensitivity, labeller = label_parsed) +
-  xlab("Knots") +
+  xlab(" ") +
   ylab("") +
   labs(col = expression(paste(theta[kappa]))) +
   theme_bw() +
@@ -211,19 +211,19 @@ g4 = ggplot(rbind(r1,r2,r3), aes(range,
 #                 left = text_grob("Tooth length", color = "green", rot = 90)
 # )
 #https://github.com/kassambara/ggpubr/issues/78
+
+# library(cowplot)
+# g = g1 + xlab("hi") / g2 / g3 / g4
+
 col_1 <- ggpubr::annotate_figure(gridExtra::arrangeGrob(g1,g2,g3,g4,ncol=1),
-                                 left = text_grob("Prior density", rot = 90,vjust = 2)
+                                 left = text_grob("Marginal prior density", rot = 90,vjust = 2),
+                                 bottom = text_grob(" ", vjust=-2)
 )
 col_2 <- ggpubr::annotate_figure(gridExtra::arrangeGrob(p1,p2,p3,p4,ncol=1),
-                                 left = text_grob("Log density (test)", rot = 90, vjust=2)
+                                 left = text_grob("Log density (test)", rot = 90, vjust=2),
+                                 bottom = text_grob("Cutoff distance (km)", vjust=-2)
 )
 
 final_fig <- gridExtra::arrangeGrob(col_1,col_2,ncol=2)
-# 
-# pdf("figures/Figure_S5.pdf")
-# final_fig
-# dev.off()
-# 
-# jpeg("figures/Figure_S5.jpeg")
-# final_fig
-# dev.off()
+#ggsave(final_fig, filename="figures/Figure_S10.jpeg")
+
