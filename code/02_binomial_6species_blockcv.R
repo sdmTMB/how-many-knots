@@ -15,8 +15,8 @@ catch = dplyr::filter(catch, year==2018)
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "folds" = c(10, 20),
-  "range" = seq(25, 150, by = 25),
+  "folds" = c(10),
+  "range" = seq(25, 125, by = 50),
   "species" = unique(catch$common_name),
   "n" = NA,
   "blocks"=NA,
@@ -27,7 +27,7 @@ df <- expand.grid(
 
 set.seed(2021)
 
-for (i in seq(254,nrow(df),by=2)) {
+for (i in 1:nrow(df)) {
   
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
   

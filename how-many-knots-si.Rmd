@@ -59,25 +59,11 @@ catch$common_name[which(catch$common_name=="petrale sole")] = "Petrale sole"
 catch$common_name[which(catch$common_name=="sablefish")] = "Sablefish"
 catch$common_name[which(catch$common_name=="darkblotched rockfish")] = "Darkblotched rockfish"
 ggplot(catch, aes(X,Y)) + 
-  geom_point(size=0.1,alpha=0.3,col="grey30") + 
+  geom_point(size=0.05,alpha=0.2,col="grey30") + 
   facet_wrap(~common_name) + 
   xlab("Eastings") + 
   ylab("Northings") + 
-  geom_point(data = dplyr::filter(catch,Present==1), aes(X,Y), alpha=0.3,size=0.1,col="red")
-
-```
-
-\break  
-
-```{r fig-s2, echo=FALSE, fig.cap = "Catch per unit effort (kg per km2) in the 2018 WCBTS survey. Estimates are shown in log space.", fig.pos="placeHere"}
-catch$CPUE <- log(catch$cpue_kg_km2)
-ggplot(dplyr::filter(catch,CPUE>0), aes(X,Y,col=CPUE)) + 
-  geom_point(size=0.1,alpha=0.3) + 
-  facet_wrap(~common_name) + 
-  xlab("Eastings") + 
-  ylab("Northings") + 
-  guides(col=guide_legend(title="ln(CPUE)"))
-  
+  geom_point(data = dplyr::filter(catch,Present==1), aes(X,Y), alpha=0.2,size=0.05,col="red")
 
 ```
   
@@ -117,10 +103,10 @@ g
 
 \break  
 
-```{r fig-s8, echo=FALSE, fig.cap = "Out of sample predictive density for Dover Sole presence-absence models, as a function of cutoff distance (km) and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"}
-source("figures/figure_s6_binomial_dover_spatialCV.R")
-g1
-```
+```{r fig-s8, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes).", fig.pos="placeHere"}
+source("figures/figure_03_binom_dens_6species.R")
+g
+```  
 
 \break  
 
@@ -141,7 +127,7 @@ g1
 <!-- # g1 -->
 <!-- # ``` -->
 
-```{r fig-s9, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA.", fig.pos="placeHere"}
+```{r fig-s9, echo=FALSE, fig.cap = "Binomial predictive densities for four species from the WCBTS survey, as a function of number of knots (using cutoff values from 3-120km). Estimation is done using Template Model Builder (TMB) instead of INLA, and as in the main text, each series is centered to be on a similar scale.", fig.pos="placeHere"}
 source("figures/figure_tmb_binom.R")
 g1
 ```

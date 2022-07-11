@@ -12,7 +12,7 @@ catch = dplyr::filter(catch, year==2018)
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = seq(3, 120, by = 6),
-  "blocks" = c(20),
+  "blocks" = c(10,20),
   "species" = unique(catch$common_name),
   "n" = NA,
   "dens_ll" = NA

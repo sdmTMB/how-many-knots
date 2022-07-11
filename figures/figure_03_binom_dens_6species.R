@@ -1,10 +1,13 @@
 library(ggplot2)
 library(ggpubr)
+library(viridis)
 
 df_random <- readRDS("output/02_binom_dens_6species_random.rds")
 df_random$Folds = "Random"
+
 df_band <- readRDS("output/02_binom_dens_6species_block.rds")
 df_band$Folds = paste(df_band$blocks, "bands")
+
 df_block <- readRDS("output/02_binom_dens_6species_blockCV.rds")
 df_block$Folds = paste("Range", df_block$range)
 
@@ -21,8 +24,8 @@ df$species[which(df$species == "sablefish")] <- "Sablefish"
 df$species[which(df$species == "Pacific ocean perch")] <- "POP"
 
 df$Folds = factor(df$Folds, levels = c("Random", "10 bands", "20 bands",
-                                       "Range 25", "Range 50", "Range 75",
-                                       "Range 100", "Range 125", "Range 150"))
+                                       "Range 25", "Range 75",
+                                       "Range 125"))
 
 # make all values relative to finest mesh
 df = dplyr::group_by(df, species, Folds) %>%
@@ -46,25 +49,31 @@ df = dplyr::group_by(df, species, Folds) %>%
 library(RColorBrewer)
 rand_col <- grey(0.3)
 band_col <- magma(2, begin=0.4, end=0.8)
-block_col <- viridis(6,end=0.8)
+block_col <- viridis(3,end=0.8)
 cols <- c(rand_col, band_col, block_col)
 names(cols) = levels(df$Folds)
-custom_cols <- scale_color_manual(name = "Levels", values=cols)
+custom_cols <- scale_color_manual(name = "Levels", values=cols,
+                                  labels = c("Random","10 bands","20 bands",
+                                             expression(blockCV[25]),
+                                             expression(blockCV[75]),
+                                             expression(blockCV[125])))
 
 g <- ggplot(dplyr::filter(df, Folds %in% c("Range 50","Range 100","Range 150")== FALSE), aes(cutoff, dens_ll, group=Folds, col=Folds)) +
-  geom_point(size = 2, alpha = 0.5) +
-  # geom_smooth() +
+  #geom_point(size = 2, alpha = 0.5) +
+  #geom_line() + 
+  #geom_smooth() +
   theme_bw() +
   facet_wrap(~species, nrow = 2, scale="free") +
   xlab("Cutoff distance (km)") +
-  ylab("Log density (test)") +
+  ylab("Log density") +
   theme(strip.background = element_rect(fill = "white")) +
   theme(strip.text.x = element_text(size = 7)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) + 
   #scale_color_viridis_d(end=0.7) + 
   theme(axis.text.y = element_text(angle = 90)) + 
-  geom_smooth(se=FALSE,size=0.3, method="loess",span=0.1) + 
-  custom_cols
+  geom_smooth(se=FALSE,size=0.3, method="loess",span=0.3) + 
+  custom_cols + 
+  theme(legend.text.align = 0)
 #pdf("test.pdf")
 #g = ggarrange(g1, g2, ncol=1,common.legend=TRUE)
 #dev.off()
