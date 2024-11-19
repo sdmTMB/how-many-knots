@@ -180,7 +180,7 @@ g
 
 \break  
 
-```{r fig3, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes).", fig.pos="placeHere"}
+```{r fig3, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). Range values of 25, 75, and 125 in the blockCV package translate to 218, 54, and 25 blocks. All series are centered to be on similar scales. ", fig.pos="placeHere"}
 source("figures/figure_03_binom_dens_6species.R")
 g
 ```  
