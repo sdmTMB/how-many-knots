@@ -8,7 +8,7 @@ library(dplyr)
 
 set.seed(2021)
 haul <- readRDS("data/june_bottom_temp.rds")
-haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
+#haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
 
 # initial loop over the cutoff values
 df <- expand.grid(

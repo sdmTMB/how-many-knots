@@ -10,14 +10,14 @@ library(future)
 plan(multisession)
 
 haul <- readRDS("data/june_bottom_temp.rds")
-haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
+#haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
 set.seed(2021)
 
 coordinates(haul) <- c("X", "Y")
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = seq(20, 160, by = 5),
+  "cutoff" = seq(20, 160, by = 2.5),
   "holdout" = seq(1, nrow(haul)),
   "n" = NA,
   "dens_ll" = NA

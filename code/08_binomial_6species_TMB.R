@@ -6,12 +6,15 @@ is_unix <- .Platform$OS.type == "unix"
 library(future)
 if (is_rstudio || !is_unix) plan(multisession) else plan(multicore)
 
-haul <- readRDS("data/haul_cleaned.rds")
+haul <- readRDS("data/haul_cleaned.rds") 
 catch <- readRDS("data/catch_cleaned.rds")
-catch = dplyr::filter(catch, year==2018)
+catch = dplyr::filter(catch, year==2023)
+haul <- sdmTMB::add_utm_columns(haul, ll_names = c("longitude_dd","latitude_dd"))
+catch <- sdmTMB::add_utm_columns(catch, ll_names = c("longitude_dd","latitude_dd"))
+
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = seq(3, 120, by = 6),
+  "cutoff" = exp(seq(log(10), log(200), length.out=20)),
   "blocks" = c(10,20),
   "species" = unique(catch$common_name),
   "n" = NA,
@@ -21,14 +24,15 @@ df <- expand.grid(
 set.seed(2021)
 
 for (i in 1:nrow(df)) {
-  catch_sub <- dplyr::filter(catch, common_name == df$species[i])
+  catch_sub <- dplyr::filter(catch, common_name == df$species[i]) |>
+    dplyr::select(-X, -Y)
 
   # Join catch and haul data
-  haul_new <- haul %>%
+  haul_new <- dplyr::select(haul, -latitude_dd, -longitude_dd) %>%
     left_join(catch_sub, by = "trawl_id") %>%
     dplyr::select(trawl_id, X, Y,
-      latitude = latitude_dd.x,
-      longitude = longitude_dd.x,
+      latitude = latitude_dd,
+      longitude = longitude_dd,
       year = year,
       log_depth_scaled,
       log_depth_scaled2,
@@ -38,8 +42,8 @@ for (i in 1:nrow(df)) {
   haul_new$cpue_kg_km2[which(is.na(haul_new$cpue_kg_km2))] <- 0
 
   # convert coordinates to km
-  haul_new$X <- haul_new$X / 1000
-  haul_new$Y <- haul_new$Y / 1000
+  #haul_new$X <- haul_new$X / 1000
+  #haul_new$Y <- haul_new$Y / 1000
   # create occurrence field
   haul_new$present <- ifelse(haul_new$cpue_kg_km2 > 0, 1, 0)
   coordinates(haul_new) <- c("X", "Y")
@@ -55,7 +59,7 @@ for (i in 1:nrow(df)) {
   haul_new$fold <- NULL
   haul_new$block <- 1
   for (jj in 1:n_blocks) {
-    haul_new$block[which(haul_new$latitude < quantile(haul_new$latitude, 1 - jj * (1 / n_blocks)))] <- jj + 1
+    haul_new$block[which(haul_new$Y < quantile(haul_new$Y, 1 - jj * (1 / n_blocks)))] <- jj + 1
   }
   # now assign folds
   block_fold <- data.frame(
@@ -79,7 +83,9 @@ for (i in 1:nrow(df)) {
   df$n[i] <- mesh$n
 
   haul_df <- as.data.frame(haul_new)
-  mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, xy_cols = c("X", "Y"), mesh = mesh)
+  mesh_sdmTMB <- sdmTMB::make_mesh(data = haul_df, 
+                                   xy_cols = c("X", "Y"), 
+                                   mesh = mesh)
   
   fit <- sdmTMB::sdmTMB_cv(
     formula = present ~ log_depth_scaled + log_depth_scaled2,
