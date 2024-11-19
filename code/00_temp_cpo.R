@@ -8,11 +8,10 @@ library(dplyr)
 
 set.seed(2021)
 haul <- readRDS("data/june_bottom_temp.rds")
-haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
 
 # initial loop over the cutoff values
 df <- expand.grid(
-  "cutoff" = seq(20, 160, by = 2.5),
+  "cutoff" = seq(30, 160, by = 2),
   "blocks" = 10,
   "n" = NA,
   "log_cpo" = NA,

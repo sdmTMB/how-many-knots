@@ -10,7 +10,8 @@ library(future)
 plan(multisession)
 
 haul <- readRDS("data/june_bottom_temp.rds")
-haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
+haul <- sdmTMB::add_utm_columns(haul, ll_names = c("longitude_dd","latitude_dd"))
+#haul[, c("X", "Y")] <- haul[, c("X", "Y")] / 1000
 # species are dover sole, sablefish, petrale sole, lingcod, darkblotched rockfish
 # g = group_by(catch, common_name) %>% dplyr::summarise(p = sum(present)) %>% dplyr::arrange(-p)
 

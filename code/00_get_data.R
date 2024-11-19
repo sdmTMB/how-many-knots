@@ -1,3 +1,6 @@
+remotes::install_github("pbs-assess/sdmTMB", "b146eb3")
+remotes::install_github("pfmc-assessments/nwfscSurvey", "0386065")
+
 library(sf)
 library(inlabru)
 library(INLA)
@@ -19,15 +22,7 @@ haul <- haul %>%
   ) %>%
   dplyr::select(trawl_id, latitude_dd, longitude_dd, depth_hi_prec_m, temperature_at_gear_c_der)
 
-haul_trans <- haul
-coordinates(haul_trans) <- c("longitude_dd", "latitude_dd")
-proj4string(haul_trans) <- CRS("+proj=longlat +datum=WGS84")
-newproj <- paste("+proj=utm +zone=10 ellps=WGS84 +datum=WGS84")
-
-haul_trans <- spTransform(haul_trans, CRS(newproj))
-haul_trans <- as.data.frame(haul_trans)
-haul$X <- haul_trans$longitude_dd
-haul$Y <- haul_trans$latitude_dd
+haul <- sdmTMB::add_utm_columns(haul, ll_names = c("longitude_dd","latitude_dd"))
 
 # center and scale depth, removing NAs
 haul <- dplyr::filter(haul, !is.na(depth_hi_prec_m))
@@ -42,9 +37,9 @@ catch <- nwfscSurvey::PullCatch.fn(
 # format to later join catch and haul
 names(catch) <- tolower(names(catch))
 catch$trawl_id <- as.numeric(catch$trawl_id)
+catch <- sdmTMB::add_utm_columns(catch, ll_names = c("longitude_dd","latitude_dd"))
 
 dover <- dplyr::filter(catch, common_name == "Dover sole")
-
 # Join catch and haul data
 haul_new <- haul %>%
   left_join(dover, by = "trawl_id") %>%
@@ -68,15 +63,14 @@ dplyr::group_by(catch, common_name) %>%
   dplyr::summarize(n = length(which(cpue_kg_km2>0))) %>%
   dplyr::arrange(-n)
 
+# get url from 
+url <- "https://raw.githubusercontent.com/pfmc-assessments/indexwc/refs/heads/main/data-raw/configuration.csv"
+config <- read.csv(url)
+
+catch$common_name <- tolower(catch$common_name)
+
 # petrale sole", "darkblotched rockfish","lingcod", "sablefish
-sub <- dplyr::filter(catch, common_name %in% c(
-  "Dover sole", # 593 pos tows
-  "sablefish",# 435 pos tows
-  "petrale sole",#291
-  "lingcod",#225
-  "darkblotched rockfish", # 105
-  "Pacific ocean perch"# 40 tows
-))
+sub <- dplyr::filter(catch, common_name %in% config$species)
 saveRDS(sub, "data/catch_cleaned.rds")
 
 
