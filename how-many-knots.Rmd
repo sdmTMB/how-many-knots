@@ -257,7 +257,8 @@ would we get better estimates from a higher dimensional GP model?
 Recommendations:
 
 -   If using these tools for index standardization, and you're comparing model structures (but you don't care about comparing specific covariates, and are not drawing inference about fixed effects themselves), then fitting large meshes is fine and will generate indices that approximate the data well.
-    It is important to note though that most parameters associated with random effects or variances will become smaller as the knots increase, so inference should not be drawn from these
+    It is important to note though that most parameters associated with random effects or variances will become smaller as the knots increase, so inference should not be drawn from these.
+    Overly fine meshes may degrade out-of-sample performance due to overfitting
 
 -   If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out of sample performance for the test data.
     In these cases, spatial blocking of cross validation will also impact parameters, and it's useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
