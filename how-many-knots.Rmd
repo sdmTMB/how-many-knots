@@ -18,9 +18,9 @@ bibliography: how-many-knots.bib
 ---
 
 $^1$Conservation Biology Division, Northwest Fisheries Science Center, National Marine Fisheries Service, National Oceanic and Atmospheric Administration, 2725 Montlake Blvd E, Seattle WA, 98112, USA\
-email: eric.ward@noaa.gov  
-$^2$Pacific Biological Station, Fisheries and Oceans Canada, Nanaimo, BC, V6T 6N7, Canada  
-$^\dagger$ Authors contributed equally to this work    
+email: [eric.ward\@noaa.gov](mailto:eric.ward@noaa.gov){.email}\
+$^2$Pacific Biological Station, Fisheries and Oceans Canada, Nanaimo, BC, V6T 6N7, Canada\
+$^\dagger$ Authors contributed equally to this work
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE, tidy=FALSE, tidy.opts=list(width.cutoff=60), warning = FALSE, message = FALSE)
@@ -33,137 +33,241 @@ library(jpeg)
 ```
 
 ## Abstract
+
 \setlength\parindent{24pt}
 
-1. Spatial and spatiotemporal models are seeing increasingly used in ecology and related fields to model latent distributions. Applications relying on these methods have used them to track population change over time, assess changing species distributions, and model spatial population processes (predation, habitat use, fishing impacts, etc). 
+1.  Spatial and spatiotemporal models are seeing increasingly used in ecology and related fields to model latent distributions.
+    Applications relying on these methods have used them to track population change over time, assess changing species distributions, and model spatial population processes (predation, habitat use, fishing impacts, etc).
 
-2. Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) appraoch. One of the most critical decisions for building SPDE--based models is how to construct the spatial approximation ("mesh"). Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance. Using a publicly available dataset of commercially fished species on the west coast of the USA, we develop two cases studies; first we construct a spatial model of ocean temperature, and second we build spatial models of occurrence and catch rates for 6 groundfish species. We apply a series of sensitivity analyses to each example to understand how mesh resolution affects the predictive accuracy of models predicting species occurrences and catch rates. 
+2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) appraoch.
+    One of the most critical decisions for building SPDE--based models is how to construct the spatial approximation ("mesh").
+    Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance.
+    Using a publicly available dataset of commercially fished species on the west coast of the USA, we develop two cases studies; first we construct a spatial model of ocean temperature, and second we build spatial models of occurrence and catch rates for 6 groundfish species.
+    We apply a series of sensitivity analyses to each example to understand how mesh resolution affects the predictive accuracy of models predicting species occurrences and catch rates.
 
-3. Our results highlight that for spatial models of temperature and catch rates, the finest scale spatial approximations generally overfit the data and resulted in decreased out of sample predictive performance. For each of the species and models considered, there appeared to be an optimal range of vertices (knots) used in constructing the spatial approximation. These results held across a range of spatial cross-validation sampling schemes. We found less clear results when working with binomial presence absence data -- while finer mesh resolutions resulted in better fits to training data, 
+3.  Our results highlight that for spatial models of temperature and catch rates, the finest scale spatial approximations generally overfit the data and resulted in decreased out of sample predictive performance.
+    For each of the species and models considered, there appeared to be an optimal range of vertices (knots) used in constructing the spatial approximation.
+    These results held across a range of spatial cross-validation sampling schemes.
+    We found less clear results when working with binomial presence absence data -- while finer mesh resolutions resulted in better fits to training data,
 
-4. Results from our work highlight that practicioners should not assume that the performance of SPDE--based models improves with higher resolution. Instead, each dataset likely has a range of resolutions that results in optimal out of sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis. Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (estimates of population abundance, distribution, etc.) when out of sample prediction is a focus of inference. 
+4.  Results from our work highlight that practicioners should not assume that the performance of SPDE--based models improves with higher resolution.
+    Instead, each dataset likely has a range of resolutions that results in optimal out of sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis.
+    Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (estimates of population abundance, distribution, etc.) when out of sample prediction is a focus of inference.
 
 ## Key words
+
 Spatial, spatiotemporal, Stochastic Partial Differential Equation (SPDE), Integrated Nested Laplace Approximation (INLA), Gaussian random field, mesh, predictive accuracy
 
 ## Introduction
 
-Recent computational advances have allowed for the rapid estimation of large spatial and spatiotemporal models in ecology and related fields [@banerjee_bayesian_2012].
-Motivating questions for these applications to large georeferenced datasets including tracking abundance in time and space, identifying environmental predictors of occurrence, modeling disease spread, or quantifying range shifts in distribution [@ross_accessible_2012; @miller_spatial_2013; @thorson_comparing_2017].
+Recent advances in computational methods have revolutionized the estimation of spatial and spatiotemporal models in ecology and related fields [@banerjee_bayesian_2012].
+These models address key questions, such as tracking species abundance over time and space, identifying environmental predictors of occurrence, modeling disease spread, and quantifying range shifts in distributions [@ross_accessible_2012; @miller_spatial_2013; @thorson_comparing_2017].
+Application of these methods to large georeferenced datasets has become increasingly important as ecological and environmental challenges demand precise and scalable statistical tools.
 
-There are a number of statistical approaches for developing models with spatial components; examples include generalized additive models (GAMs) [@forney_habitat-based_2012; @murase_application_2009], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@datta_hierarchical_2016; @latimer_hierarchical_2009]. Estimating these models can be computationally challenging for large spatial datasets [@banerjee_hierarchical_2004], necessitating the use of approximations or smoothing. One solution to this problem is the Stochastic Partial Differentiation Equation (SPDE) approach [@lindgren_explicit_2011]. The SPDE method uses Gaussian Markov Random Fields (GMRF) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance method to describe the spatial field, a sparse precision matrix can be estimated [@lindgren_explicit_2011]. Like other approximations, the SPDE approach can be seen as a form of smoothing [@yue2014].  [@miller2020] provide an excellent summary of the recent SPDE literature, and also show the link between these approaches and smoothing splines. 
+A range of statistical approaches are available for modeling spatial processes; examples include generalized additive models (GAMs) [@forney_habitat-based_2012; @murase_application_2009], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@datta_hierarchical_2016; @latimer_hierarchical_2009].
+Estimating these models can be computationally challenging for large georeferenced datasets [@banerjee_hierarchical_2004], necessitating the use of approximations or smoothing.
+One solution to approximation is the Stochastic Partial Differentiation Equation (SPDE) approach [@lindgren_explicit_2011].
+The SPDE method uses Gaussian Markov Random Fields (GMRF) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance method to describe the spatial field, a sparse precision matrix can be estimated [@lindgren_explicit_2011].
+Like other approximations, the SPDE approach can be seen as a form of smoothing [@yue2014].
+[@miller2020] provide an excellent summary of the recent SPDE literature, and also show the link between these approaches and smoothing splines.
 
-Advances by [@rue_approximate_2009] have enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields. Rather than using MCMC to estimate the posterior distribution of parameters, INLA approximates the posterior with the Laplace approximation. These models have been extended to include the ability to fit geographic barriers, such as islands or lakes, anisotropic covariance functions, and non-Gaussian data [@bakka_spatial_2018].
-In addition to estimating Bayesian posterior distributions [@lindgren_bayesian_2015], INLA has been integrated with Template Model Builder (TMB; [@kristensen_tmb_2016; @osgood-zimmerman_statistical_2021]) to enable auto-differentiation and has been adopted in many spatial fisheries applications around the world [e.g., @johnson_investigating_2019; @thorson_measuring_2019; @anderson_2019].
+Advances by [@rue_approximate_2009] have enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields with the Laplace approximation to the posterior distribution [@lindgren_bayesian_2015].
+These models have been extended to include the ability to fit geographic barriers (such as islands or lakes), include anisotropic covariance functions, and non-Gaussian data [@bakka_spatial_2018].
+Related software packages to increase the accessibility of these models includes inlabru [@bachl2019] and PointedSDMs [@mostert2023].
+As an alternative to INLA, the SPDE approach has also been integrated with Template Model Builder (TMB; [@kristensen_tmb_2016]) to enable fast marginal maximum likelihood estimation, also via the Laplace approximation.
+Software to implement the TMB--SPDE approach includes VAST [@thorson2019] and sdmTMB [@anderson2022], and comparisons between the INLA and TMB based approaches can be found in [@osgood-zimmerman2022].
 
 Constructing spatiotemporal models with INLA or related software involves many of the same considerations as with simpler non-spatial models.
-For example, modelers frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?" Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatiotemporal variation [@anderson_black_2019]. Because of the flexibility in these approaches, choices about how spatial processes are modeled can also affect inference about covariates; fitting an overly complex spatial process may mask effects of important covariates for example. One of the more complicated and important decisions---particularly for models implementing the SPDE--INLA approach---lies in specifying the dimensionality of the latent spatial fields [@lindgren_bayesian_2015].
+For example, analysts frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?" Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatiotemporal variation [@anderson_black_2019].
+Because of the flexibility in these approaches, choices about how spatial processes are modeled can also affect inference about covariates; fitting an overly complex spatial process may mask effects of important covariates for example [@dambly2023].
+One of the more complicated and important decisions---particularly for models implementing the SPDE approach---lies in specifying the dimensionality of the latent spatial fields [@lindgren_bayesian_2015].
 Unlike Generalized Additive Models (GAMs), which often penalize smooth terms [@wood2003], there are not explicit penalties in overfitting with the SPDE approach in INLA.
 
-Spatial fields are approximated using the SPDE approach by first constructing a "mesh" (a map consisting of small triangles, e.g., Figure 1). By estimating values of the spatial field at the vertices (also "nodes" or "knots"), the spatial field may be triangulated to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
-There are a number of decision points to be made in constructing the mesh, including whether to include a boundary, whether the boundary is regular, the maximum edge of any triangle (in the core or boundary area), and the minimum angles allowed by the triangles [@gomez-rubio_bayesian].
-Each of these decisions can impact the density and number of small triangles that make up the mesh---and in turn, the accuracy of predictions.
-Though the mesh construction is important, this step has been omitted from many best practices guides using an the SPDE--INLA approach, and we are only aware of several sensitivity analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020].
-While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes don't always translate into better performance [@huang_evaluating_2017].
+A critical yet often overlooked step in SPDE--based modeling is constructing the spatial mesh--a triangular discretization that approximates the spatial field (Figure 1).
+By estimating values of the spatial field at the vertices (also "nodes" or "knots"), the spatial field may be projected to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
+Decisions regarding the mesh, such as its boundary shape, maximum triangle edge length, and minimum triangle angles, significantly impact model accuracy and computational efficiency [@gomez-rubio_bayesian].
+While increasing mesh resolution generally improves the approximation of spatial processes, it may also introduce overfitting, computational challenges, and inflated standard errors for predictions.
+While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes don't always translate into better performance [@huang_evaluating_2017] and we are only aware of several sensitivity analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
 
-The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out of sample predictive performance. We develop two case studies based on a publicly available dataset of marine fishes in the Northeast Pacific Ocean. First we develop spatial models of summer ocean temperature, and second, construct models of occurrence and catch rates for 6 groundfish species. We quantify the in sample and out of sample predictions for these models, across a range of mesh resolutions (number of knots). We further examine how the choice of cross-validation sampling schemes (number of spatial blocks and folds) and priors influence predictive performance. All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (XXXX) and Zenodo (on publication).
+The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out of sample predictive performance.
+We develop two case studies based on a publicly available dataset of marine fishes in the Northeast Pacific Ocean.
+First we develop spatial models of summer ocean temperature, and second, construct models of occurrence and catch rates for 6 groundfish species.
+We quantify the in sample and out of sample predictions for these models, across a range of mesh resolutions (number of knots).
+We further examine how the choice of cross-validation sampling schemes (number of spatial blocks and folds) and priors influence predictive performance.
+All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (XXXX) and Zenodo (on publication).
 
 ## Methods
 
 ### Data
 
-To evaluate the effect of mesh resolution on predictive ability of models using the SPDE approach, we used a publicly available scientific survey of marine fishes in the Northeast Pacific Ocean  (<https://www.nwfsc.noaa.gov/data>)).
+To evaluate the effect of mesh resolution on predictive ability of models using the SPDE approach, we used a publicly available scientific survey of marine fishes in the Northeast Pacific Ocean (<https://www.nwfsc.noaa.gov/data>)).
 The West Coast Bottom Trawl Survey (WCBTS) data represents a fishery-independent survey collected annually over a 16-year period, 2003-2021, covering the California Current ecosystem on the west coast of the USA [@keller_northwest_2017].
 The survey is designed to estimate the abundance, sizes, and age composition of commercially and recreationally targeted groundfish species found in near-bottom habitats.
-The fundamental methods of the survey, sampling intensity, gear, seasonal and spatial coverage, and random stratified design have remained relatively constant. In addition to collecting biological samples, the survey also measures environmental variables, such as water temperature at the depth of the net. Because of the large number of model runs needed to evaluate our sensitivity analyses, we restricted our analysis to only use survey data from 2018 (n = 702 observations).
-Though hundreds of species our encountered in the survey, we further restricted our analysis to six species that are of interest to fisheries, but also represent a range of occurrences (Table S1).  
+The fundamental methods of the survey, sampling intensity, gear, seasonal and spatial coverage, and random stratified design have remained relatively constant.
+In addition to collecting biological samples, the survey also measures environmental variables, such as water temperature at the depth of the net.
+Because of the large number of model runs needed to evaluate our sensitivity analyses, we restricted our analysis to only use survey data from 2018 (n = 702 observations).
+Though hundreds of species our encountered in the survey, we further restricted our analysis to six species that are of interest to fisheries, but also represent a range of occurrences (Table S1).
 
 ### Modeling ocean bottom temperature
 
-As a first example of the impact of mesh resolution on predictive performance, we constructed spatial models of ocean temperature, using data from June 2018 (n = 175 tows). As there are generally strong non-linear trends between depth and temperature, we used a statistical model of the form
+As a first example of the impact of mesh resolution on predictive performance, we constructed spatial models of ocean temperature, using data from June 2018 (n = 175 tows).
+As there are generally strong non-linear trends between depth and temperature, we used a statistical model of the form
 
 $$g(u_{s}) = b_{0}+b_{1}x_{s}+ b_{2}x_{s}^{2}+\omega_{s}$$\
 where $\omega_{s}$ is the estimated spatial field at location $s$, $b_0$ is the intercept, $x_{s}$ is the depth, $b_1$ and $b_2$ are estimated quadratic coefficients, $u_s$ is the expected value incorporating fixed and random components, and $g()$ is an inverse link function.
 
-All meshes in our analyses used a non-convex boundary and offset based on 5% of the data (e.g. Figure 1). We fixed the maximum edge of triangles in the mesh at 100km in the core area and 500km closer to the boundary. Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020]. There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 20--160km in increments of 2.5km  (corresponding to 53--197 vertices). 
+All meshes in our analyses used a non-convex boundary and offset based on 5% of the data (e.g. Figure 1).
+We fixed the maximum edge of triangles in the mesh at 100km in the core area and 500km closer to the boundary.
+Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020].
+There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 20--160km in increments of 2.5km (corresponding to 53--197 vertices).
 We fit all models using R-INLA [@R2021; @lindgren_bayesian_2015] and R 4.1.0 [@R2021] and specifically the 'inlabru' R package, which is a convenient wrapper for the INLA software [@bachl_inlabru_2019].
-Penalized complexity priors were used on the Matérn covariance parameters [@simpson_penalising_2015;  @osgood-zimmerman_statistical_2021]. Specifically, priors on the Matérn spatial range ($\kappa$) and marginal standard deviation ($\sigma_{\omega}$) are constructed as a function of the tail probabilities [@simpson2017; @fuglstad2018]. We assigned priors so that $Pr(\kappa < 20) = 0.05$ and $Pr(\sigma_{\omega} > 5) = 0.05$. 
+Penalized complexity priors were used on the Matérn covariance parameters [@simpson_penalising_2015; @osgood-zimmerman_statistical_2021].
+Specifically, priors on the Matérn spatial range ($\kappa$) and marginal standard deviation ($\sigma_{\omega}$) are constructed as a function of the tail probabilities [@simpson2017; @fuglstad2018].
+We assigned priors so that $Pr(\kappa < 20) = 0.05$ and $Pr(\sigma_{\omega} > 5) = 0.05$.
 
-### Quantifying performance  
+### Quantifying performance
 
-Observations were randomly assigned to training and test sets (25 observations used for testing, and the same test and training data used for all meshes). As sensitivity analysis, we also applied true Leave-One-Out Cross-Validation (LOOCV), with each observation alternatively held out as the test set. To quantify the predictive performance of models with alternative mesh configurations, we considered several of out of sample predictive performance statistics.
-We first applied the conditional predictive ordinate (CPO, [@pettit1990]), which is an approximation to the LOOCV.  The total predictive log density can be represented as the sum of individual log posterior probabilities, $\sum_{i=1}^{n} \log[P(Y_{i}|Y_{\neq i})]$, where $P(Y_{i}|Y_{\neq i})$ is the probability of test data $i$.
+Observations were randomly assigned to training and test sets (25 observations used for testing, and the same test and training data used for all meshes).
+As sensitivity analysis, we also applied true Leave-One-Out Cross-Validation (LOOCV), with each observation alternatively held out as the test set.
+To quantify the predictive performance of models with alternative mesh configurations, we considered several of out of sample predictive performance statistics.
+We first applied the conditional predictive ordinate (CPO, [@pettit1990]), which is an approximation to the LOOCV.
+The total predictive log density can be represented as the sum of individual log posterior probabilities, $\sum_{i=1}^{n} \log[P(Y_{i}|Y_{\neq i})]$, where $P(Y_{i}|Y_{\neq i})$ is the probability of test data $i$.
 Because conducting true leave-one-out cross-validation may be prohibitive for large datasets, INLA uses CPO to approximate the out of sample posterior probability for each observation.
-Previous research has shown that the CPO approximation performs similarly to MCMC cross-validation [@held_posterior_2010], yet it is less clear whether CPO is similar to true cross-validation in comparing mesh resolution. For comparison, we calculated the total CPO score across a range of cutoff values, and compared these results to the true predictive density using LOOCV. For our comparison using a larger test set (25 observations), we calculated the predictive log density for each observation. Additional metrics, including the bias and standard error associated with each prediction were also used for comparisons.
+Previous research has shown that the CPO approximation performs similarly to MCMC cross-validation [@held_posterior_2010], yet it is less clear whether CPO is similar to true cross-validation in comparing mesh resolution.
+For comparison, we calculated the total CPO score across a range of cutoff values, and compared these results to the true predictive density using LOOCV.
+For our comparison using a larger test set (25 observations), we calculated the predictive log density for each observation.
+Additional metrics, including the bias and standard error associated with each prediction were also used for comparisons.
 
 ### Modeling species occurrence and catch rates
 
-As a more complicated example, we constructed a case study focused on modeling groundfish occurrence from the WCBTS survey. As data collected by the WCBTS and other marine surveys are both zero-inflated and have positively skewed catch rates, conventional approaches to analyzing these data have used a delta or hurdle model to separately model occurrence and positive catches [e.g., @johnson_investigating_2019; @thorson_guidance_2019].
-We adopt a similar approach, but just focus on the presence-absence model. For consistency with recent fisheries research using these data [@johnson_investigating_2019], we applied the same model used in the temperature example; this consisted of an estimated intercept, quadratic effect of depth, and estimated spatial field. Though the WCBTS survey collects data on hundreds of marine fishes, we limited our analysis to 6 species that are of interest to fishery managers, and that represent a range of distribution and occurrence (Table S1; Figure S1). 
+As a more complicated example, we constructed a case study focused on modeling groundfish occurrence from the WCBTS survey.
+As data collected by the WCBTS and other marine surveys are both zero-inflated and have positively skewed catch rates, conventional approaches to analyzing these data have used a delta or hurdle model to separately model occurrence and positive catches [e.g., @johnson_investigating_2019; @thorson_guidance_2019].
+We adopt a similar approach, but just focus on the presence-absence model.
+For consistency with recent fisheries research using these data [@johnson_investigating_2019], we applied the same model used in the temperature example; this consisted of an estimated intercept, quadratic effect of depth, and estimated spatial field.
+Though the WCBTS survey collects data on hundreds of marine fishes, we limited our analysis to 6 species that are of interest to fishery managers, and that represent a range of distribution and occurrence (Table S1; Figure S1).
 
-We constructed 20 alternative meshes using cutoff values ranging from 3--120km for each species. Meshes varied slightly by species, but this range of cutoff values resulted in meshes ranging in size from 75--1348 knots. High-resolution meshes with more knots than observations were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
+We constructed 20 alternative meshes using cutoff values ranging from 3--120km for each species.
+Meshes varied slightly by species, but this range of cutoff values resulted in meshes ranging in size from 75--1348 knots.
+High-resolution meshes with more knots than observations were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
 
 ### Sensitivity to fold assignments
 
-To further evaluate interactions between mesh resolution and fold assignments when doing cross-validation, we varied how data were split into training and test sets to evaluate model performance. We used 10-fold cross-validation for all comparisons, and considered three alternative splits of the data. Recent work has demonstrated that for spatially structured data, creating random folds that ignore spatial autocorrelation may bias results [@valavi_blockcv_2019]. Given the WCBTS survey is nearly 1-dimensional along a latitudinal gradient [@keller_northwest_2017] (Figure 1), we first used latitude quantiles to divide the WCBTS survey domain into blocks (n = 10, 20) with blocks assigned continuously to folds. As a second approach, we assigned observations to folds using the 'blockCV' package in R [@valavi_blockcv_2019]. For each cutoff distance, we varied the spatial range separating training and test data from 25 -- 150km (points beyond this distance are allowed to be used as training data for a focal observation). As a third split, we assigned observations randomly to folds, ignoring spatial structure. Model performance was evaluated by calculating the predictive log density for each fold, and total predictive densities were calculated by summing across folds. To contrast the out of sample predictive performance with fit to the training data, we also calculated the log density of the training data. As with our spatial models of ocean temperature, groundfish models were fit using inlabru [@bachl_inlabru_2019].
+To further evaluate interactions between mesh resolution and fold assignments when doing cross-validation, we varied how data were split into training and test sets to evaluate model performance.
+We used 10-fold cross-validation for all comparisons, and considered three alternative splits of the data.
+Recent work has demonstrated that for spatially structured data, creating random folds that ignore spatial autocorrelation may bias results [@valavi_blockcv_2019].
+Given the WCBTS survey is nearly 1-dimensional along a latitudinal gradient [@keller_northwest_2017] (Figure 1), we first used latitude quantiles to divide the WCBTS survey domain into blocks (n = 10, 20) with blocks assigned continuously to folds.
+As a second approach, we assigned observations to folds using the 'blockCV' package in R [@valavi_blockcv_2019].
+For each cutoff distance, we varied the spatial range separating training and test data from 25 -- 150km (points beyond this distance are allowed to be used as training data for a focal observation).
+As a third split, we assigned observations randomly to folds, ignoring spatial structure.
+Model performance was evaluated by calculating the predictive log density for each fold, and total predictive densities were calculated by summing across folds.
+To contrast the out of sample predictive performance with fit to the training data, we also calculated the log density of the training data.
+As with our spatial models of ocean temperature, groundfish models were fit using inlabru [@bachl_inlabru_2019].
 
 ### Sensitivity to priors and estimation methods
 
-Finally, we used our groundfish examples to explore the robustness of predictive performance via cross-validation to the choice of hyperparameters for the PC priors (Matérn $\kappa$ and $\sigma_{\omega}$). Rather than do a prior sensitivity across all species and sub-models, we applied this sensitivity analysis to the Dover Sole presence-absence sub-model. The PC prior on $\sigma_{\omega}$ is to specify the threshold and upper tail probability, $Pr(\sigma_{\omega} > \sigma_{0}) = \theta_{\sigma}$. In addition to the original values ($\sigma_{0}$ = 5, $\theta_{\sigma}$ = 0.05), we examined alternative values of $\sigma_{0}$ = (1, 10) and $\theta_{\sigma}$ = c(0.01, 0.1, 0.4). In contrast, the PC prior on $\kappa$ specifies the lower threshold and tail probability, $Pr(\kappa > \kappa_{0}) = \theta_{\kappa}$. We varied $\kappa_{0}$ (5, 20, 40) and $\theta_{\kappa}$ (0.01, 0.1, 0.4). For each combination of PC priors, we calculated the out of sample predictive density, using 10-fold cross-validation with 20 latitudinal bands defined by quantiles. 
+Finally, we used our groundfish examples to explore the robustness of predictive performance via cross-validation to the choice of hyperparameters for the PC priors (Matérn $\kappa$ and $\sigma_{\omega}$).
+Rather than do a prior sensitivity across all species and sub-models, we applied this sensitivity analysis to the Dover Sole presence-absence sub-model.
+The PC prior on $\sigma_{\omega}$ is to specify the threshold and upper tail probability, $Pr(\sigma_{\omega} > \sigma_{0}) = \theta_{\sigma}$.
+In addition to the original values ($\sigma_{0}$ = 5, $\theta_{\sigma}$ = 0.05), we examined alternative values of $\sigma_{0}$ = (1, 10) and $\theta_{\sigma}$ = c(0.01, 0.1, 0.4).
+In contrast, the PC prior on $\kappa$ specifies the lower threshold and tail probability, $Pr(\kappa > \kappa_{0}) = \theta_{\kappa}$.
+We varied $\kappa_{0}$ (5, 20, 40) and $\theta_{\kappa}$ (0.01, 0.1, 0.4).
+For each combination of PC priors, we calculated the out of sample predictive density, using 10-fold cross-validation with 20 latitudinal bands defined by quantiles.
 
-We validated parameters estimates from our estimation with `inlabru` by also estimating the same models using TMB [@kristensen_tmb_2016]. Specifically, we performed estimation using the R package 'sdmTMB' [@anderson_2022], which uses the INLA software to create meshes, but takes advantage of automatic differentiation in TMB for faster maximum likelihood parameter estimation.
+We validated parameters estimates from our estimation with `inlabru` by also estimating the same models using TMB [@kristensen_tmb_2016].
+Specifically, we performed estimation using the R package 'sdmTMB' [@anderson_2022], which uses the INLA software to create meshes, but takes advantage of automatic differentiation in TMB for faster maximum likelihood parameter estimation.
 
 ## Results
 
-### Temperature case study  
+### Temperature case study
 
-Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for data used to fit the model versus out of sample data used to evaluate predictions (Figure 2). While predictive density was highest at small cutoff distances (~ 20km) corresponding to a fine mesh, we found that a coarser mesh with larger cutoff distance (~ 130km) had the highest predictive density for the test data. Increasing the mesh resolution generally improves the spatial model point estimates for training data, but a consequence of adding more vertices is that the standard errors of predictions increase for both in-sample and out of sample data (Figures S3-S5). Evaluating the true LOOCV against the CPO metric was largely confirmatory, with both approaches highlighting that intermediate meshes (cutoff distances ~ 80km) yielded improved out of sample prediction for this data (Figure S6).   
+Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for data used to fit the model versus out of sample data used to evaluate predictions (Figure 2).
+While predictive density was highest at small cutoff distances (\~ 20km) corresponding to a fine mesh, we found that a coarser mesh with larger cutoff distance (\~ 130km) had the highest predictive density for the test data.
+Increasing the mesh resolution generally improves the spatial model point estimates for training data, but a consequence of adding more vertices is that the standard errors of predictions increase for both in-sample and out of sample data (Figures S3-S5).
+Evaluating the true LOOCV against the CPO metric was largely confirmatory, with both approaches highlighting that intermediate meshes (cutoff distances \~ 80km) yielded improved out of sample prediction for this data (Figure S6).
 
-### Groundfish case study  
+### Groundfish case study
 
 <!-- Our models of groundfish presence--absence demonstrated that as expected, higher resolution SPDE meshes generally yielded better fits to training data (SI figure).  -->
 
-Our models of groundfish presence--absence demonstrated that the effect of mesh resolution on the fit to training data with the binomial sub-model was weakest for species with lowest occurrence rates (Pacific Ocean perch, Darkblotched rockfish, Figure 3). The relationship between mesh resolution and out of sample predictive performance appeared more variable. When spatial structure is ignored in designating folds, finer meshes appear to have the best out of sample performance across species (Figure 3). However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole). Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
+Our models of groundfish presence--absence demonstrated that the effect of mesh resolution on the fit to training data with the binomial sub-model was weakest for species with lowest occurrence rates (Pacific Ocean perch, Darkblotched rockfish, Figure 3).
+The relationship between mesh resolution and out of sample predictive performance appeared more variable.
+When spatial structure is ignored in designating folds, finer meshes appear to have the best out of sample performance across species (Figure 3).
+However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole).
+Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
 
 <!-- with the binomial and Gamma models across a range of species and mesh cutoff values demonstrated that after some optimal spatial cutoff of triangles in the mesh, predictive accuracy of the spatial models deteriorated as mesh resolution was increased. Binomial models of Darkblotched rockfish (Fig. 2) and Gamma models for all species also supported a decline in performance with the coarsest mesh resolutions (Fig. S1). The binomial sub-model suggested that the optimal number of knots was 200--250 (Fig. 2), and the positive Gamma sub-model indicated even smaller knot values had nearly equivalent out of sample predictive performance (Fig. S1). In contrast to the decline in out of sample performance with high mesh resolution, we found the opposite to be true for in sample data; for both the binomial and Gamma models, predictive performance generally increased with the number of knots (Fig. 2, Fig. S1).   -->
 
 ### Sensitivity to fold assignments
 
-For all species in our analyses except lingcod, out of sample predictive performance was greatest for the finest meshes when fold assignments were done randomly (Figure 3). Coarser meshes resulted in decreasing predictive performance; species with low occurrence rates (Darkblotched rockfish, Pacific Ocean perch) had more subtle declines. In general, our results showed that predictive performance was sensitive to both the cutoff distance and type of spatial blocking used. Species with the most variability in occurrence rates had the most consistent results across blocking schemes; lingcod generally supported using a cutoff distance of 50--90km, and petrale sole supported a smaller cutoff distance (30--60km). Results from sablefish and Dover sole supported 
+For all species in our analyses except lingcod, out of sample predictive performance was greatest for the finest meshes when fold assignments were done randomly (Figure 3).
+Coarser meshes resulted in decreasing predictive performance; species with low occurrence rates (Darkblotched rockfish, Pacific Ocean perch) had more subtle declines.
+In general, our results showed that predictive performance was sensitive to both the cutoff distance and type of spatial blocking used.
+Species with the most variability in occurrence rates had the most consistent results across blocking schemes; lingcod generally supported using a cutoff distance of 50--90km, and petrale sole supported a smaller cutoff distance (30--60km).
+Results from sablefish and Dover sole supported
 
-Focusing on the Dover Sole presence-absence model, our sensitivities demonstrated that the relationship between mesh resolution and predictive performance was robust to the choice of spatial sampling and choice of penalized complexity priors for the Matérn covariance function. Across a range of alternative spatial sampling strategies using the `blockCV` package, we adjusted the buffer separating test and training dataset (large buffers corresponding to small numbers of blocks). With large buffers, there appears to be a decline in predictive performance at small numbers of knots (Fig. S8), but with large numbers of spatial blocks (> 50), the coarsest meshes have similar performance as models with moderate numbers of knots. Varying the hyperparameters of the PC priors for the Matérn $\kappa$ and $\sigma_{\omega}$ similarly demonstrated that the predictive performance of these models declined across all values (Fig. S10).
+Focusing on the Dover Sole presence-absence model, our sensitivities demonstrated that the relationship between mesh resolution and predictive performance was robust to the choice of spatial sampling and choice of penalized complexity priors for the Matérn covariance function.
+Across a range of alternative spatial sampling strategies using the `blockCV` package, we adjusted the buffer separating test and training dataset (large buffers corresponding to small numbers of blocks).
+With large buffers, there appears to be a decline in predictive performance at small numbers of knots (Fig. S8), but with large numbers of spatial blocks (\> 50), the coarsest meshes have similar performance as models with moderate numbers of knots.
+Varying the hyperparameters of the PC priors for the Matérn $\kappa$ and $\sigma_{\omega}$ similarly demonstrated that the predictive performance of these models declined across all values (Fig. S10).
 
 <!-- Because k-fold cross-validation requires significant computation time, approximations like CPO may be more convenient ways to measure predictive accuracy of spatiotemporal models. Though conventionally used to compare models with alternative fixed effects, we compared CPO approximations to true LOOCV, as an extreme case of cross-validation. Both CPO and LOOCV suggested that too many knots can result in diminished predictive accuracy (Figure 4). The biggest difference in these metrics was that the LOOCV suggested that more than 400 knots resulted in decreased performance, while CPO indicated a performance decline after 675 knots (Figure 4).   -->
 
 ### Sensitivity to priors and estimation methods
 
-Finally, we examined the effects of increasing mesh resolution on estimated model parameters. We found little evidence of patterns between mesh resolution, estimated Matérn parameters ($\kappa$, $\sigma_{\omega}$), and predictive log densities. While the estimated range ($\kappa$) generally declined with large numbers of knots (Fig. 5), there are less obvious patterns in the marginal standard deviation $\sigma_{\omega}$ (Fig. 5). The estimated fixed effect $B_{0}$ representing the mean of the spatial field generally declined with increasing mesh resolution (Figure S2), because as the mesh increases in complexity and explains more variation in observed data, the intercept is expected to shrink toward the mean.
+Finally, we examined the effects of increasing mesh resolution on estimated model parameters.
+We found little evidence of patterns between mesh resolution, estimated Matérn parameters ($\kappa$, $\sigma_{\omega}$), and predictive log densities.
+While the estimated range ($\kappa$) generally declined with large numbers of knots (Fig. 5), there are less obvious patterns in the marginal standard deviation $\sigma_{\omega}$ (Fig. 5).
+The estimated fixed effect $B_{0}$ representing the mean of the spatial field generally declined with increasing mesh resolution (Figure S2), because as the mesh increases in complexity and explains more variation in observed data, the intercept is expected to shrink toward the mean.
 
 ## Discussion
 
-Spatial and spatiotemporal models are becoming increasingly used in ecology, fisheries, and related sub-fields, in particular to address questions related to changing species distributions in time and space. High dimensional datasets with hundreds of observations introduce computational challenges, but complicated spatial structure can be efficiently approximated using the SPDE approach [@miller2020]. Combined with the INLA software for estimation [@rue_approximate_2009], these tools have become widely accessible. Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes can be confusing.  
+Spatial and spatiotemporal models are becoming increasingly used in ecology, fisheries, and related sub-fields, in particular to address questions related to changing species distributions in time and space.
+High dimensional datasets with hundreds of observations introduce computational challenges, but complicated spatial structure can be efficiently approximated using the SPDE approach [@miller2020].
+Combined with the INLA software for estimation [@rue_approximate_2009], these tools have become widely accessible.
+Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes can be confusing.
 
-There are certainly situations where it is advantageous to fit SPDE models with the highest resolution mesh possible. Increasing the mesh resolution yields a better approximation of the latent spatial process; our results are consistent with previous research showing that this generally yields a better fit to the data (Figs. 2-4). Previous work has shown increasing the SPDE mesh resolution up to a point will make estimates of parameters of interest stabilize [@roste_2020]. Thus, if a goal of inference is identifying precise relationships between environmental or habitat covariates and species' occupancy or density, then meshes lots of vertices would be preferred to coarser ones.  
+There are certainly situations where it is advantageous to fit SPDE models with the highest resolution mesh possible.
+Increasing the mesh resolution yields a better approximation of the latent spatial process; our results are consistent with previous research showing that this generally yields a better fit to the data (Figs. 2-4).
+Previous work has shown increasing the SPDE mesh resolution up to a point will make estimates of parameters of interest stabilize [@roste_2020].
+Thus, if a goal of inference is identifying precise relationships between environmental or habitat covariates and species' occupancy or density, then meshes lots of vertices would be preferred to coarser ones.
 
-Disadvantages of fine SPDE meshes become more apparent in scenarios where spatial interpolation from a SPDE mesh is a focus of inference; example applications include when predictions are used to derive indices of population abundance, area occupied by a species, or centre of gravity. Using a publicly available dataset of groundfishes in the NE Pacific Ocean, we demonstrate that models of occurrence and catch rates with the finest spatial approximations have deteriorating predictive performance for out of sample data. Declines in out of sample predictive performance with too many knots appears robust to (1) how data are spatially sampled for cross-validation, (2) the specific penalized complexity priors used for the Matern function, and (3) whether estimation is done using INLA or maximum likelihood with TMB. Datasets like the groundfish case study used here (n = 702) support meshes with \~ 300 or fewer knots, though some of the models supported even fewer (in particular, species with low occurrence rates, such as Darkblotched rockfish or Pacific Ocean perch).
+Disadvantages of fine SPDE meshes become more apparent in scenarios where spatial interpolation from a SPDE mesh is a focus of inference; example applications include when predictions are used to derive indices of population abundance, area occupied by a species, or centre of gravity.
+Using a publicly available dataset of groundfishes in the NE Pacific Ocean, we demonstrate that models of occurrence and catch rates with the finest spatial approximations have deteriorating predictive performance for out of sample data.
+Declines in out of sample predictive performance with too many knots appears robust to (1) how data are spatially sampled for cross-validation, (2) the specific penalized complexity priors used for the Matern function, and (3) whether estimation is done using INLA or maximum likelihood with TMB.
+Datasets like the groundfish case study used here (n = 702) support meshes with \~ 300 or fewer knots, though some of the models supported even fewer (in particular, species with low occurrence rates, such as Darkblotched rockfish or Pacific Ocean perch).
 
-While there are a number of alternative ways to measure model performance, we recommend using k-fold cross-validation to explore predictive accuracy across a range of meshes. Tools like AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019]. Similarly, while WAIC is available in INLA, higher resolution meshes generally correspond to better WAIC values [@roste_2020]. Results from our comparison of presence absence models of Dover sole suggested some similarity between using the conditional predictive ordinate (CPO) [@pettit1990] and true LOOCV, which the CPO aims to approximate. Thus, for large datasets where cross validation may be challenging, CPO may also be useful in identifying meshes with good out of sample predictive ability.
+While there are a number of alternative ways to measure model performance, we recommend using k-fold cross-validation to explore predictive accuracy across a range of meshes.
+Tools like AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
+Similarly, while WAIC is available in INLA, higher resolution meshes generally correspond to better WAIC values [@roste_2020].
+Results from our comparison of presence absence models of Dover sole suggested some similarity between using the conditional predictive ordinate (CPO) [@pettit1990] and true LOOCV, which the CPO aims to approximate.
+Thus, for large datasets where cross validation may be challenging, CPO may also be useful in identifying meshes with good out of sample predictive ability.
 
-Comparing the performance of models with alternative spatial complexity obviously introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots. This challenge is not unique to models using the INLA--SPDE approach; selecting both the location and number of knots is a general problem for knot--based spatial models. Other examples of spatial statistics models that have encountered this issue include machine learning methods (reviewed in [@banerjee2013]), Gaussian Process models [@garton2020] and P-splines [@ruppert2002]. Identifying a range of knot values that yield good predictive performance will be specific to individual datasets (e.g. magnitude of observation error, spatial autocorrelation, number of observations, type of response). The optimal mesh resolution for one species may be informative for other species from the same dataset, potentially reducing the computational overhead. Though some work has suggested vertices be chosen relative to the spatial range of a dataset [@roste_2020], this advice creates a somewhat circular framework in that the range is usually known after a reasonable spatial model is constructed.
+Comparing the performance of models with alternative spatial complexity obviously introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots.
+This challenge is not unique to models using the INLA--SPDE approach; selecting both the location and number of knots is a general problem for knot--based spatial models.
+Other examples of spatial statistics models that have encountered this issue include machine learning methods (reviewed in [@banerjee2013]), Gaussian Process models [@garton2020] and P-splines [@ruppert2002].
+Identifying a range of knot values that yield good predictive performance will be specific to individual datasets (e.g. magnitude of observation error, spatial autocorrelation, number of observations, type of response).
+The optimal mesh resolution for one species may be informative for other species from the same dataset, potentially reducing the computational overhead.
+Though some work has suggested vertices be chosen relative to the spatial range of a dataset [@roste_2020], this advice creates a somewhat circular framework in that the range is usually known after a reasonable spatial model is constructed.
 
-TODO -- CONCLUDING PARAGRAPH, FUTURE RESEARCH ETC
-4. Future research paragraph
-- larger comparison across species and datasets
-- is this a feature of triangulation with inla? would we get better estimates from a higher dimensional GP model? 
-- don't use WAIC
-- identifying the appropriate spatial complexity is important for 
+TODO -- CONCLUDING PARAGRAPH, FUTURE RESEARCH ETC 4.
+Future research paragraph - larger comparison across species and datasets - is this a feature of triangulation with inla?
+would we get better estimates from a higher dimensional GP model?
+- don't use WAIC - identifying the appropriate spatial complexity is important for
+
+Recommendations:
+
+-   If using these tools for index standardization, and you're comparing model structures (but you don't care about comparing specific covariates, and are not drawing inference about fixed effects themselves), then fitting large meshes is fine and will generate indices that approximate the data well.
+    It is important to note though that most parameters associated with random effects or variances will become smaller as the knots increase, so inference should not be drawn from these
+
+-   If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out of sample performance for the test data.
+    In these cases, spatial blocking of cross validation will also impact parameters, and it's useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
 
 ## Acknowledgements
 
-We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shelton for helpful comments that improved our analysis and presentation of results.  
-  
-\break  
-  
+We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shelton for helpful comments that improved our analysis and presentation of results.
+
+\break
+
 ## Figures
 
 ```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", fig.pos="placeHere"}
@@ -171,50 +275,48 @@ source("figures/figure_01_mesh.r")
 gridExtra::grid.arrange(p2,p1,nrow=1)
 ```
 
-\break  
+\break
 
 ```{r fig2, echo=FALSE, fig.cap = "June ocean temperature (Celsius) from the 2018 WCBTS survey (sample locations further offshore are typically at greater depth, and colder). Log predictive densities are shown for the test and training datasets in our modeling. Each predictive density point represents a different mesh, constructed by varying the cutoff distance (x-axis); higher cutoff values correspond to coarser meshes.", fig.pos="placeHere"}
 source("figures/figure_2_temp_results.R")
 g
 ```
 
-\break  
+\break
 
 ```{r fig3, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). Range values of 25, 75, and 125 in the blockCV package translate to 218, 54, and 25 blocks. All series are centered to be on similar scales. ", fig.pos="placeHere"}
 source("figures/figure_03_binom_dens_6species.R")
 g
-```  
+```
 
 <!-- ```{r fig4, echo=FALSE, fig.cap = "Gamma predictive densities for catch rate models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). The in-sample predictive density is calculated holding out the first fold.", fig.pos="placeHere"} -->
+
 <!-- source("figures/figure_04_gamma_dens_4species.R") -->
+
 <!-- g -->
+
 <!-- ```   -->
 
+\break
 
-  
-  
-\break  
-
-```{r fig4, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}  
+```{r fig4, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}
  
 source("figures/figure_priors.R")
 grid::grid.draw(final_fig)  
 ```
+
 <!-- \break   -->
+
 <!-- ```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"} -->
+
 <!-- source("figures/figure_03_binomial.R") -->
+
 <!-- g1 -->
+
 <!-- ``` -->
 
-
-  
-
-
+```{=tex}
 \break
-\break 
-
-  
-    
-    
-
+\break
+```
 # References
