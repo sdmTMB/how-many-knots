@@ -7,16 +7,17 @@ library(dplyr)
 library(future)
 library(INLA)
 library(inlabru)
-library(viridis)
 plan(multisession)
 haul <- readRDS("data/haul_cleaned.rds")
 catch <- readRDS("data/catch_cleaned.rds")
+haul$fold_id <- rep(1:10, length.out = nrow(haul))
 haul$trawl_id <- as.numeric(haul$trawl_id)
+
 # initial loop over the cutoff values
 df <- expand.grid(
   "cutoff" = round(exp(seq(log(12), log(175), length.out=8))),
   "folds" = c(10),
-  "bin_width" = seq(10,150,by=20),
+  #"bin_width" = seq(10,150,by=20),
   "species" = unique(catch$common_name),
   "n" = NA,
   "blocks"=NA,
@@ -25,7 +26,7 @@ df <- expand.grid(
   "present_converged" = NA,
   "range" = NA,
   "sigma_O" = NA,
-  "sigma_E" = NA
+  "sigma_E" = NA#,
   # "total_dens_ll" = NA,
   # "total_sd_ll" = NA,  
   # "total_converged" = NA,
@@ -33,7 +34,7 @@ df <- expand.grid(
 )
 # df <- dplyr::filter(df, !(range==25 & selection == "systematic"),
 #                     !(range==125 & selection == "systematic"))
-df <- dplyr::arrange(df, -cutoff, species, bin_width)
+#df <- dplyr::arrange(df, -cutoff, species, bin_width)
 
 set.seed(2021)
 
@@ -52,28 +53,8 @@ for (i in 1:nrow(df)) {
   joined_dat$year <- year(joined_dat$date)
   joined_dat$fyear <- as.factor(joined_dat$year)
   joined_dat$yday <- yday(joined_dat$date)
-  # assign folds with blockCV -- first convert to sf
-  #pa_data <- sf::st_as_sf(joined_dat, coords = c("X", "Y"), crs = 32610)
-  # est_range <- blockCV::cv_spatial_autocor(x = pa_data, 
-  #                             column = "present")
-  # sb <- try(blockCV::cv_spatial(
-  #   x = pa_data,
-  #   column = "present",
-  #   size = df$range[i], # cv_spatial() uses meters
-  #   k = df$folds[i], # k has to be smaller than number of blocks
-  #   selection = as.character(df$selection[i])
-  # ), silent=TRUE)
-  # 
-  #if(class(sb)!="try-error") {
   
-  breaks <- seq(min(joined_dat$Y), max(joined_dat$Y), by = df$bin_width[i])
-  bins <- cut(joined_dat$Y, breaks = breaks, include.lowest = TRUE, labels=FALSE)
-  bins[which(is.na(bins))] <- max(bins,na.rm=T) + 1
-  bins_to_folds <- data.frame(bin = 1:max(bins), fold = rep(1:10, 1000)[1:max(bins)])
-  
-  joined_dat$bin <- bins
-  joined_dat <- dplyr::left_join(joined_dat, bins_to_folds)
-  
+
     coordinates(joined_dat) <- c("X", "Y")
     
     # create boundary, same for all meshes
@@ -107,24 +88,13 @@ for (i in 1:nrow(df)) {
                      spatiotemporal = "iid",
                      family = binomial(),
                      k_folds = df$folds[i],
-                     fold_ids = joined_dat$fold), silent=TRUE)
+                     fold_ids = joined_dat$fold_id), silent=TRUE)
     
-
-    # fit_total <- sdmTMB_cv(cpue_kg_km2 ~ -1 + as.factor(year) + zday + I(zday^2),
-    #                          data = as.data.frame(joined_dat),
-    #                          mesh = mesh,
-    #                          time = "year",
-    #                          spatial = "on",
-    #                          spatiotemporal = "iid",
-    #                          family = delta_gamma(),
-    #                          k_folds = df$folds[i],
-    #                          fold_ids = "fold")
-    # 
     if(class(fit_present) != "try-error") {
-      df$present_dens_ll[i] <- mean(fit_present$fold_loglik) # total log density
+      df$present_dens_ll[i] <- mean(fit_present$fold_loglik)# total log density
       df$present_sd_ll[i] <- sd(fit_present$fold_loglik)
       df$present_converged[i] <- fit_present$converged
-      
+
       tidy_pars <- lapply(fit_present$models, tidy, effects = "ran_pars")
       ranges <- unlist(lapply(lapply(tidy_pars, getElement, 2), getElement, 1))
       df$range[i] <- mean(ranges)
@@ -147,71 +117,48 @@ for (i in 1:nrow(df)) {
         all_pars_to_save <- rbind(all_pars_to_save, tidy_all)
       }
     }
-    # df$total_dens_ll[i] <- fit_total$sum_loglik # total log density
-    # df$total_sd_ll[i] <- sd(fit_total$fold_loglik)
-    # df$total_converged[i] <- fit_total$converged
-  #}
-  saveRDS(df, "output/02_binomial_blockCV.rds")
+
+  saveRDS(df, "output/02_binomial_randomCV.rds")
   print(i)
 }
 
-library(ggplot2)
 d <- readRDS("output/02_binomial_blockCV.rds")
 
-# filter out the number of species that don't converge enough
-d <- dplyr::filter(d, present_converged == TRUE) |>
-  dplyr::group_by(species) |>
-  dplyr::mutate(nobs = n()) |>
-  dplyr::filter(nobs >= 20) |>
-  dplyr::select(-nobs)
-d$species <- as.factor(as.character(d$species))
+d <- readRDS("output/02_binomial_blockCV.rds")
 
-# Bring in the random 
-d_random <- readRDS("output/02_binomial_randomCV.rds")
-d_random <- dplyr::filter(d_random, present_converged == TRUE) |>
-  dplyr::filter(species %in% d$species) |>
-  dplyr::mutate(bin_width = NA)
+d <- dplyr::filter(d, present_converged == TRUE)
 
 # Larger bins result in more widely spaced test regions, beyond the estimated
 # range. These regions are no longer correlated with the training data and predictions
 # become more uncertain / not as good
-dplyr::filter(d) |>
+dplyr::filter(d, species %in% unique(d$species)[1:12]) |>
   ggplot(aes(n, present_dens_ll, group = bin_width, col = bin_width)) + 
   geom_line() + 
   facet_wrap(~species, scale = "free_y")
 
-
-d |>
-ggplot(aes(n, range, group = bin_width, col = bin_width)) + 
+dplyr::filter(d, species %in% unique(d$species)[1:12]) |>
+  ggplot(aes(n, range, group = bin_width, col = bin_width)) + 
   geom_line() + 
-  facet_wrap(~species, scale = "free_y") + 
-  xlab("Mesh vertices") + ylab("Estimated spatial range (km)") + 
-  scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") + 
-  theme_bw() + 
-  theme(strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=5),
-        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1)) + 
-  geom_point(data = d_random, aes(n, range), col="black", alpha=0.5)
-ggsave("figures/groundfish_range_v_n.png", height = 5, width = 7)
-
-
-library(scales)
-d |> # divide by 12670 to get average ll per obs
-  ggplot(aes(n, present_dens_ll / 12670, group = bin_width, col = bin_width)) + 
+  facet_wrap(~species, scale = "free_y")
+dplyr::filter(d, species %in% unique(d$species)[1:12]) |>
+  ggplot(aes(range, present_dens_ll, group = bin_width, col = bin_width)) + 
   geom_line() + 
-  facet_wrap(~species, scale = "free_y") + 
-  xlab("Mesh vertices") + ylab("Predicted log likelihood") + 
-  scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") + 
-  theme_bw() + 
-  theme(strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=5),
-        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
-        axis.text.y = element_text(size=8)) + 
-  geom_point(data = d_random, aes(n, present_dens_ll / 12670), col="black", alpha=0.5)# + 
-  #scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
-ggsave("figures/groundfish_loglik_v_n.png", height = 5, width = 7)
+  facet_wrap(~species, scale = "free_y")
 
 
 
+
+dplyr::filter(d, selection=="random") |>
+  dplyr::mutate(Range = as.factor(range)) |>
+  ggplot(aes(n, present_dens_ll, group = Range, col = Range)) + 
+  geom_line() + 
+  facet_wrap(~species, scale="free_y")
+
+
+dplyr::filter(d, range==75) |>
+  dplyr::mutate(Range = as.factor(range)) |>
+  ggplot(aes(n, present_dens_ll, group = selection, col = selection)) + 
+  geom_line() + 
+  facet_wrap(~species, scale="free_y")
 
 
