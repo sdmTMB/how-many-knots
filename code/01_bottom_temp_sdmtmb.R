@@ -10,6 +10,7 @@ plan(multisession)
 set.seed(2021)
 
 haul <- readRDS("data/haul_cleaned.rds")
+haul$date_formatted <- as.Date(as.numeric(haul$date_formatted), origin = "1970-01-01")
 haul$year <- lubridate::year(haul$date_formatted)
 haul$month <- lubridate::month(haul$date_formatted)
 haul$yday <- lubridate::yday(haul$date_formatted)
