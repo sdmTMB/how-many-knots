@@ -163,19 +163,6 @@ Model performance was evaluated by calculating the predictive log density for ea
 To contrast the out of sample predictive performance with fit to the training data, we also calculated the log density of the training data.
 As with our spatial models of ocean temperature, groundfish models were fit using inlabru [@bachl_inlabru_2019].
 
-### Sensitivity to priors and estimation methods
-
-Finally, we used our groundfish examples to explore the robustness of predictive performance via cross-validation to the choice of hyperparameters for the PC priors (Matérn $\kappa$ and $\sigma_{\omega}$).
-Rather than do a prior sensitivity across all species and sub-models, we applied this sensitivity analysis to the Dover Sole presence-absence sub-model.
-The PC prior on $\sigma_{\omega}$ is to specify the threshold and upper tail probability, $Pr(\sigma_{\omega} > \sigma_{0}) = \theta_{\sigma}$.
-In addition to the original values ($\sigma_{0}$ = 5, $\theta_{\sigma}$ = 0.05), we examined alternative values of $\sigma_{0}$ = (1, 10) and $\theta_{\sigma}$ = c(0.01, 0.1, 0.4).
-In contrast, the PC prior on $\kappa$ specifies the lower threshold and tail probability, $Pr(\kappa > \kappa_{0}) = \theta_{\kappa}$.
-We varied $\kappa_{0}$ (5, 20, 40) and $\theta_{\kappa}$ (0.01, 0.1, 0.4).
-For each combination of PC priors, we calculated the out of sample predictive density, using 10-fold cross-validation with 20 latitudinal bands defined by quantiles.
-
-We validated parameters estimates from our estimation with `inlabru` by also estimating the same models using TMB [@kristensen_tmb_2016].
-Specifically, we performed estimation using the R package 'sdmTMB' [@anderson_2022], which uses the INLA software to create meshes, but takes advantage of automatic differentiation in TMB for faster maximum likelihood parameter estimation.
-
 ## Results
 
 ### Temperature case study
@@ -195,8 +182,6 @@ When spatial structure is ignored in designating folds, finer meshes appear to h
 However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole).
 Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
 
-<!-- with the binomial and Gamma models across a range of species and mesh cutoff values demonstrated that after some optimal spatial cutoff of triangles in the mesh, predictive accuracy of the spatial models deteriorated as mesh resolution was increased. Binomial models of Darkblotched rockfish (Fig. 2) and Gamma models for all species also supported a decline in performance with the coarsest mesh resolutions (Fig. S1). The binomial sub-model suggested that the optimal number of knots was 200--250 (Fig. 2), and the positive Gamma sub-model indicated even smaller knot values had nearly equivalent out of sample predictive performance (Fig. S1). In contrast to the decline in out of sample performance with high mesh resolution, we found the opposite to be true for in sample data; for both the binomial and Gamma models, predictive performance generally increased with the number of knots (Fig. 2, Fig. S1).   -->
-
 ### Sensitivity to fold assignments
 
 For all species in our analyses except lingcod, out of sample predictive performance was greatest for the finest meshes when fold assignments were done randomly (Figure 3).
@@ -209,8 +194,6 @@ Focusing on the Dover Sole presence-absence model, our sensitivities demonstrate
 Across a range of alternative spatial sampling strategies using the `blockCV` package, we adjusted the buffer separating test and training dataset (large buffers corresponding to small numbers of blocks).
 With large buffers, there appears to be a decline in predictive performance at small numbers of knots (Fig. S8), but with large numbers of spatial blocks (\> 50), the coarsest meshes have similar performance as models with moderate numbers of knots.
 Varying the hyperparameters of the PC priors for the Matérn $\kappa$ and $\sigma_{\omega}$ similarly demonstrated that the predictive performance of these models declined across all values (Fig. S10).
-
-<!-- Because k-fold cross-validation requires significant computation time, approximations like CPO may be more convenient ways to measure predictive accuracy of spatiotemporal models. Though conventionally used to compare models with alternative fixed effects, we compared CPO approximations to true LOOCV, as an extreme case of cross-validation. Both CPO and LOOCV suggested that too many knots can result in diminished predictive accuracy (Figure 4). The biggest difference in these metrics was that the LOOCV suggested that more than 400 knots resulted in decreased performance, while CPO indicated a performance decline after 675 knots (Figure 4).   -->
 
 ### Sensitivity to priors and estimation methods
 
@@ -271,53 +254,22 @@ We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shel
 
 ## Figures
 
-```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", fig.pos="placeHere"}
-source("figures/figure_01_mesh.r")
-gridExtra::grid.arrange(p2,p1,nrow=1)
+```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", out.width="90%", out.height="90%"}
+knitr::include_graphics("figures/Figure_01.png")
 ```
 
 \break
 
-```{r fig2, echo=FALSE, fig.cap = "June ocean temperature (Celsius) from the 2018 WCBTS survey (sample locations further offshore are typically at greater depth, and colder). Log predictive densities are shown for the test and training datasets in our modeling. Each predictive density point represents a different mesh, constructed by varying the cutoff distance (x-axis); higher cutoff values correspond to coarser meshes.", fig.pos="placeHere"}
-source("figures/figure_2_temp_results.R")
-g
+```{r fig2, echo=FALSE, fig.cap = "2018 sampled ocean temperature (Celsius) from the 2018 WCGBTS survey (sample locations further offshore are typically at greater depth, and colder). Also shown is the average point-wise log-likelihood as a function of mesh features (cutoff distance, number of vertices), where the log-likelihood is calculated for training and test datasets and normalized by the number of samples in each, using 10-fold cross validation with random fold assignments."}
+knitr::include_graphics("figures/Figure_02.png")
 ```
 
 \break
 
-```{r fig3, echo=FALSE, fig.cap = "Binomial predictive densities for occurrence models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). Range values of 25, 75, and 125 in the blockCV package translate to 218, 54, and 25 blocks. All series are centered to be on similar scales. ", fig.pos="placeHere"}
-source("figures/figure_03_binom_dens_6species.R")
-g
+```{r fig3, echo=FALSE, fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
+knitr::include_graphics("figures/Figure_02b.png")
 ```
-
-<!-- ```{r fig4, echo=FALSE, fig.cap = "Gamma predictive densities for catch rate models for six species from the WCBTS survey, as a function of cutoff distances (larger cutoff distances correspond to coarser meshes). The in-sample predictive density is calculated holding out the first fold.", fig.pos="placeHere"} -->
-
-<!-- source("figures/figure_04_gamma_dens_4species.R") -->
-
-<!-- g -->
-
-<!-- ```   -->
 
 \break
 
-```{r fig4, echo=FALSE, fig.cap = "Prior sensitivity for Dover sole presence-absence model. The left column represents the marginal prior of the Matérn standard deviation or range, as a function of 3 hyperparameters. The right column presents the out of sample log predictive density (binomial), using cutoff values 3--120km.", message=FALSE, warning=FALSE, echo=FALSE,results='asis', fig.pos="placeHere", fig.height=6}
- 
-source("figures/figure_priors.R")
-grid::grid.draw(final_fig)  
-```
-
-<!-- \break   -->
-
-<!-- ```{r fig3, echo=FALSE, fig.cap = "Binomial predictive density for Dover Sole, as a function of number of knots and number of spatial blocks used for 10-fold spatial cross-validation. Cutoff values between 5-135km are used across all scenarios.", fig.pos="placeHere"} -->
-
-<!-- source("figures/figure_03_binomial.R") -->
-
-<!-- g1 -->
-
-<!-- ``` -->
-
-```{=tex}
-\break
-\break
-```
 # References
