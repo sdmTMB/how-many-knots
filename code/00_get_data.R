@@ -56,6 +56,9 @@ sub <- dplyr::filter(catch, common_name %in% config$species)
 names(sub) <- tolower(names(sub))
 saveRDS(sub, "data/catch_cleaned.rds")
 
+#spp_names <- dplyr::group_by(sub, common_name) |>
+#  dplyr::summarise(sci_name = scientific_name[1])
+#write.csv(spp_names, "species_names.csv", row.names = FALSE)
 
 # create temperature dataset
 trawlid_date <- dplyr::filter(sub, year==2018) |>
