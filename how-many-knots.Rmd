@@ -83,7 +83,7 @@ Because of the flexibility in these approaches, choices about how spatial proces
 One of the more complicated and important decisions---particularly for models implementing the SPDE approach---lies in specifying the dimensionality of the latent spatial fields [@lindgren_bayesian_2015].
 Unlike Generalized Additive Models (GAMs), which often penalize smooth terms [@wood2003], there are not explicit penalties in overfitting with the SPDE approach in INLA.
 
-A critical yet often overlooked step in SPDE--based modeling is constructing the spatial mesh--a triangular discretization that approximates the spatial field (Figure 1).
+A critical yet often overlooked step in SPDE--based modeling is constructing the spatial mesh--a triangular discretization that approximates the spatial field @ref(fig:fig1).
 By estimating values of the spatial field at the vertices (also "nodes" or "knots"), the spatial field may be projected to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
 Decisions regarding the mesh, such as its boundary shape, maximum triangle edge length, and minimum triangle angles, significantly impact model accuracy and computational efficiency [@gomez-rubio_bayesian].
 While increasing mesh resolution generally improves the approximation of spatial processes, it may also introduce overfitting, computational challenges, and inflated standard errors for predictions.
@@ -100,43 +100,34 @@ All data for our analysis are publicly available, and code and data to reproduce
 
 ### Data
 
-To evaluate the effect of mesh resolution on predictive ability of models using the SPDE approach, we used a publicly available scientific survey of marine fishes in the Northeast Pacific Ocean (<https://www.nwfsc.noaa.gov/data>)).
-The West Coast Bottom Trawl Survey (WCBTS) data represents a fishery-independent survey collected annually over a 16-year period, 2003-2021, covering the California Current ecosystem on the west coast of the USA [@keller_northwest_2017].
+To evaluate the effect of mesh resolution on the predictive ability of models using the SPDE approach, we used a publicly available scientific survey of marine fishes in the Northeast Pacific Ocean (<https://www.nwfsc.noaa.gov/data>).
+The West Coast Groundfish Bottom Trawl Survey (WCGBTS) data represents a fishery-independent survey collected annually over a 21-year period, 2003-2023 (no survey in 2020), covering the California Current ecosystem on the west coast of the USA [@keller_northwest_2017].
 The survey is designed to estimate the abundance, sizes, and age composition of commercially and recreationally targeted groundfish species found in near-bottom habitats.
 The fundamental methods of the survey, sampling intensity, gear, seasonal and spatial coverage, and random stratified design have remained relatively constant.
 In addition to collecting biological samples, the survey also measures environmental variables, such as water temperature at the depth of the net.
-Because of the large number of model runs needed to evaluate our sensitivity analyses, we restricted our analysis to only use survey data from 2018 (n = 702 observations).
-Though hundreds of species our encountered in the survey, we further restricted our analysis to six species that are of interest to fisheries, but also represent a range of occurrences (Table S1).
 
 ### Modeling ocean bottom temperature
 
-As a first example of the impact of mesh resolution on predictive performance, we constructed spatial models of ocean temperature, using data from June 2018 (n = 175 tows).
-As there are generally strong non-linear trends between depth and temperature, we used a statistical model of the form
+As a first case study examining the impacts of mesh resolution on predictive ability and inference, we constructed spatial models of bottom temperature.
+To keep the initial application simple and avoid spatiotemporal variation, we used a single year of data, selecting the one with the most data (2018, n = 655 observations).
+Because the survey spans nearly five months (19 May – 15 October), we included a day of year effect as a quadratic term, to allow for seasonal changes in mean temperature.
+Extending linear model notation, our model can be expressed as
 
-$$g(u_{s}) = b_{0}+b_{1}x_{s}+ b_{2}x_{s}^{2}+\omega_{s}$$\
-where $\omega_{s}$ is the estimated spatial field at location $s$, $b_0$ is the intercept, $x_{s}$ is the depth, $b_1$ and $b_2$ are estimated quadratic coefficients, $u_s$ is the expected value incorporating fixed and random components, and $g()$ is an inverse link function.
+$$g(u_{i}) = b_{0}+b_{1}x_{i}+ b_{2}x_{i}^{2}+\omega_{i}$$\
+where $\omega_{i}$ is the estimated spatial field at the location of the ith observation, $b_0$ is the intercept, $x_{i}$ is the day of year, $b_1$ and $b_2$ are estimated coefficients, and $g(u_{i})$ is the expected value incorporating fixed and random effects.
+Although temperature is expected to exhibit a strong correlation with depth, depth was excluded from the model due to the presence of a pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017].
+Finally, we assumed the observed temperature values followed a Gaussian distribution.
 
-All meshes in our analyses used a non-convex boundary and offset based on 5% of the data (e.g. Figure 1).
-We fixed the maximum edge of triangles in the mesh at 100km in the core area and 500km closer to the boundary.
 Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020].
-There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 20--160km in increments of 2.5km (corresponding to 53--197 vertices).
-We fit all models using R-INLA [@R2021; @lindgren_bayesian_2015] and R 4.1.0 [@R2021] and specifically the 'inlabru' R package, which is a convenient wrapper for the INLA software [@bachl_inlabru_2019].
-Penalized complexity priors were used on the Matérn covariance parameters [@simpson_penalising_2015; @osgood-zimmerman_statistical_2021].
-Specifically, priors on the Matérn spatial range ($\kappa$) and marginal standard deviation ($\sigma_{\omega}$) are constructed as a function of the tail probabilities [@simpson2017; @fuglstad2018].
-We assigned priors so that $Pr(\kappa < 20) = 0.05$ and $Pr(\sigma_{\omega} > 5) = 0.05$.
+There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 8--500km (corresponding to 24--727 vertices).
+For each mesh resolution, we performed k-fold cross validation, using 10 folds with points assigned randomly to each (i.e., no spatial blocking).
 
-### Quantifying performance
+We fit all models in R [@r2023] using the package sdmTMB [@anderson2022], which combines the SPDE approach for spatial models with the speed of maximum marginal log likelihood estimation using Template Model Builder (TMB, [@kristensen_tmb_2016]).
+TMB leverages automatic differentiation to quickly converge on parameter estimates, and it applies the Laplace approximation to integrate out random effects, including spatial or spatiotemporal components.
+We assessed model convergence using the `sanity()` function in sdmTMB; we only retained models that successfully converged (positive-definite Hessian matrix, maximum absolute log likelihood gradient \< 0.001).
 
-Observations were randomly assigned to training and test sets (25 observations used for testing, and the same test and training data used for all meshes).
-As sensitivity analysis, we also applied true Leave-One-Out Cross-Validation (LOOCV), with each observation alternatively held out as the test set.
-To quantify the predictive performance of models with alternative mesh configurations, we considered several of out of sample predictive performance statistics.
-We first applied the conditional predictive ordinate (CPO, [@pettit1990]), which is an approximation to the LOOCV.
-The total predictive log density can be represented as the sum of individual log posterior probabilities, $\sum_{i=1}^{n} \log[P(Y_{i}|Y_{\neq i})]$, where $P(Y_{i}|Y_{\neq i})$ is the probability of test data $i$.
-Because conducting true leave-one-out cross-validation may be prohibitive for large datasets, INLA uses CPO to approximate the out of sample posterior probability for each observation.
-Previous research has shown that the CPO approximation performs similarly to MCMC cross-validation [@held_posterior_2010], yet it is less clear whether CPO is similar to true cross-validation in comparing mesh resolution.
-For comparison, we calculated the total CPO score across a range of cutoff values, and compared these results to the true predictive density using LOOCV.
-For our comparison using a larger test set (25 observations), we calculated the predictive log density for each observation.
-Additional metrics, including the bias and standard error associated with each prediction were also used for comparisons.
+To quantify the predictive performance of models with different mesh configurations, we calculated two measures of performance and applied them separately to training and test data in each fold. First, as a measure of accuracy, we calculated Root Mean Squared Error (RMSE).
+Second, we calculated the total log-predictive density (log-score), which evaluates both accuracy and precision.
 
 ### Modeling species occurrence and catch rates
 
