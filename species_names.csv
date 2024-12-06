@@ -1,28 +1,28 @@
-common_name,sci_name
-Arrowtooth flounder,Atheresthes stomias
-Aurora rockfish,Sebastes aurora
-Big skate,Raja binoculata
-Blackgill rockfish,Sebastes melanostomus
-Bocaccio,Sebastes paucispinis
-Canary rockfish,Sebastes pinniger
-Chilipepper rockfish,Sebastes goodei
-Curlfin sole,Pleuronichthys decurrens
-Darkblotched rockfish,Sebastes crameri
-Flathead sole,Hippoglossoides elassodon
-Greenspotted rockfish,Sebastes chlorostictus
-Greenstriped rockfish,Sebastes elongatus
-Lingcod,Ophiodon elongatus
-Longnose skate,Raja rhina
-Longspine thornyhead,Sebastolobus altivelis
-Petrale sole,Eopsetta jordani
-Redbanded rockfish,Sebastes babcocki
-Rex sole,Glyptocephalus zachirus
-Rosethorn rockfish,Sebastes helvomaculatus
-Sablefish,Anoplopoma fimbria
-Sharpchin rockfish,Sebastes zacentrus
-Shortspine thornyhead,Sebastolobus alascanus
-Splitnose rockfish,Sebastes diploproa
-Stripetail rockfish,Sebastes saxicola
-Widow rockfish,Sebastes entomelas
-Yelloweye rockfish,Sebastes ruberrimus
-Yellowtail rockfish,Sebastes flavidus
+common_name,sci_name,P(occurrence)
+Arrowtooth flounder,Atheresthes stomias,0.36
+Aurora rockfish,Sebastes aurora,0.13
+Big skate,Raja binoculata,0.16
+Blackgill rockfish,Sebastes melanostomus,0.06
+Bocaccio,Sebastes paucispinis,0.08
+Canary rockfish,Sebastes pinniger,0.08
+Chilipepper rockfish,Sebastes goodei,0.15
+Curlfin sole,Pleuronichthys decurrens,0.12
+Darkblotched rockfish,Sebastes crameri,0.18
+Flathead sole,Hippoglossoides elassodon,0.08
+Greenspotted rockfish,Sebastes chlorostictus,0.06
+Greenstriped rockfish,Sebastes elongatus,0.26
+Lingcod,Ophiodon elongatus,0.33
+Longnose skate,Raja rhina,0.6
+Longspine thornyhead,Sebastolobus altivelis,0.35
+Petrale sole,Eopsetta jordani,0.43
+Redbanded rockfish,Sebastes babcocki,0.08
+Rex sole,Glyptocephalus zachirus,0.62
+Rosethorn rockfish,Sebastes helvomaculatus,0.08
+Sablefish,Anoplopoma fimbria,0.67
+Sharpchin rockfish,Sebastes zacentrus,0.07
+Shortspine thornyhead,Sebastolobus alascanus,0.51
+Splitnose rockfish,Sebastes diploproa,0.2
+Stripetail rockfish,Sebastes saxicola,0.22
+Widow rockfish,Sebastes entomelas,0.04
+Yelloweye rockfish,Sebastes ruberrimus,0.02
+Yellowtail rockfish,Sebastes flavidus,0.07
