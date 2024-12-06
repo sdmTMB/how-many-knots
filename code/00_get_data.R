@@ -56,6 +56,11 @@ sub <- dplyr::filter(catch, common_name %in% config$species)
 names(sub) <- tolower(names(sub))
 saveRDS(sub, "data/catch_cleaned.rds")
 
+# dplyr::mutate(catch, presence = ifelse(cpue_kg_per_ha_der > 0, 1, 0)) |>
+#   dplyr::group_by(common_name) |>
+#   dplyr::summarise(p = round(mean(presence), 2)) |>
+#   as.data.frame()
+
 #spp_names <- dplyr::group_by(sub, common_name) |>
 #  dplyr::summarise(sci_name = scientific_name[1])
 #write.csv(spp_names, "species_names.csv", row.names = FALSE)
