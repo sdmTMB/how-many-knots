@@ -17,25 +17,18 @@ haul$trawl_id <- as.numeric(haul$trawl_id)
 df <- expand.grid(
   "cutoff" = c(15, 50, 100),
   "folds" = c(10),
-  #"bin_width" = seq(10,150,by=20),
   "species" = unique(catch$common_name),
   "n" = NA,
   "blocks"=NA,
-  "present_dens_ll" = NA,
-  "present_sd_ll" = NA,
-  "present_converged" = NA,
+  "converged" = NA,
   "range" = NA,
   "sigma_O" = NA,
-  "sigma_E" = NA#,
-  # "total_dens_ll" = NA,
-  # "total_sd_ll" = NA,  
-  # "total_converged" = NA,
-  #"selection" = c("random", "systematic")
+  "sigma_E" = NA
 )
 
 set.seed(2021)
 
-for (i in 1:nrow(df)) {
+for (i in 44:nrow(df)) {
   
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
   
@@ -77,32 +70,21 @@ for (i in 1:nrow(df)) {
     # use delta-model to look at separate likelihoods for pres-abs and pos
     # don't include depth as predictor, as it's confounded with spatial field
     #joined_dat$zday <- scale(joined_dat$yday)
-    fit <- try(sdmTMB_cv(cpue_kg_km2 ~ -1 + as.factor(year),
+    fit <- try(sdmTMB(cpue_kg_km2 ~ -1 + as.factor(year),
                      data = joined_dat,
                      mesh = mesh,
                      time = "year",
                      spatial = "on",
                      spatiotemporal = "iid",
-                     family = tweedie(),
-                     k_folds = df$folds[i],
-                     fold_ids = joined_dat$fold_id), silent=TRUE)
+                     family = delta_gamma()), silent=TRUE)
     
     if(class(fit) != "try-error") {
-      
-      tidy_pars <- lapply(fit_present$models, tidy, effects = "ran_pars")
-      ranges <- unlist(lapply(lapply(tidy_pars, getElement, 2), getElement, 1))
-      df$range[i] <- mean(ranges)
-      
-      sigma_O <- unlist(lapply(lapply(tidy_pars, getElement, 2), getElement, 2))
-      df$sigma_O[i] <- mean(sigma_O)
-      
-      sigma_E <- unlist(lapply(lapply(tidy_pars, getElement, 2), getElement, 3))
-      df$sigma_E[i] <- mean(sigma_E)
-      
-      tidy_ran <- purrr::map_dfr(tidy_pars, .f = ~ .x, .id = "id")
-      tidy_pars <- lapply(fit_present$models, tidy)
-      tidy_fixef <- purrr::map_dfr(tidy_pars, .f = ~ .x, .id = "id")
-      tidy_all <- rbind(tidy_ran, tidy_fixef)
+      s <- sanity(fit, silent=TRUE)
+      df$converged[i] <- s$all_ok
+      tidy_pars_1 <- tidy(fit, effects = "ran_pars", model = 1)
+      tidy_pars_2 <- tidy(fit, effects = "ran_pars", model = 1)
+
+      tidy_all <- rbind(tidy_pars_1, tidy_pars_2)
       tidy_all$i <- i
       
       if(i == 1) {
@@ -110,8 +92,26 @@ for (i in 1:nrow(df)) {
       } else {
         all_pars_to_save <- rbind(all_pars_to_save, tidy_all)
       }
+      
+      # Generate index
+      grid <- readRDS("data/wc_grid.rds")
+      grid$X <- grid$X*10
+      grid$Y <- grid$Y*10
+      # replicate grid by year -- no 2020
+      rep_grid <- replicate_df(grid, "year", unique(joined_dat$year))
+      pred <- predict(fit, newdata = rep_grid, return_tmb_object = TRUE)
+      index <- get_index(pred, bias_correct = TRUE)
+      index$species <- df$species[i]
+      index$cutoff <- df$cutoff[i]
+      
+      if(i == 1) {
+        all_indices <- index
+      } else {
+        all_indices <- rbind(all_indices, index)
+      }
     }
-
-  saveRDS(df, "output/02_binomial_randomCV.rds")
+  
+    saveRDS(all_pars_to_save, "output/04_index_pars.rds")
+  saveRDS(all_indices, "output/04_index_estimates.rds")
   print(i)
 }
