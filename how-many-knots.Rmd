@@ -104,7 +104,8 @@ To evaluate the effect of mesh resolution on the predictive ability of models us
 The West Coast Groundfish Bottom Trawl Survey (WCGBTS) data represents a fishery-independent survey collected annually over a 21-year period, 2003-2023 (no survey in 2020), covering the California Current ecosystem on the west coast of the USA [@keller_northwest_2017].
 The survey is designed to estimate the abundance, sizes, and age composition of commercially and recreationally targeted groundfish species found in near-bottom habitats.
 The fundamental methods of the survey, sampling intensity, gear, seasonal and spatial coverage, and random stratified design have remained relatively constant.
-In addition to collecting biological samples, the survey also measures environmental variables, such as water temperature at the depth of the net. Importantly, this survey shares similar characteristics to many other bottom trawl survey datasets used to monitor marine fishes around the world. 
+In addition to collecting biological samples, the survey also measures environmental variables, such as water temperature at the depth of the net.
+Importantly, this survey shares similar characteristics to many other bottom trawl survey datasets used to monitor marine fishes around the world.
 
 ### Modeling ocean bottom temperature
 
@@ -114,59 +115,79 @@ Because the survey spans nearly five months (19 May – 15 October), we included
 Extending notation used in linear mixed models (LMMs), our model can be expressed as
 
 $$g(u_{i}) = b_{0}+b_{1}x_{i}+ b_{2}x_{i}^{2}+\omega_{i}$$\
-where $\omega_{i}$ is the estimated spatial field at the location of the ith observation and modeled as $\omega \sim MVN(0,\Sigma_\omega)$, $b_0$ is the intercept, $x_{i}$ is the day of year, $b_1$ and $b_2$ are estimated coefficients, and $g(u_{i})$ is the expected value incorporating fixed and random effects. Although temperature is expected to exhibit a strong correlation with depth, depth was excluded from the model due to the presence of a pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017]. Finally, we assumed the observed temperature values followed a Gaussian distribution.
+where $\omega_{i}$ is the estimated spatial field at the location of the ith observation and modeled as $\omega \sim MVN(0,\Sigma_\omega)$, $b_0$ is the intercept, $x_{i}$ is the day of year, $b_1$ and $b_2$ are estimated coefficients, and $g(u_{i})$ is the expected value incorporating fixed and random effects.
+Although temperature is expected to exhibit a strong correlation with depth, depth was excluded from the model due to the presence of a pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017].
+Finally, we assumed the observed temperature values followed a Gaussian distribution.
 
-Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020]. There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 8--500km (corresponding to 24--727 vertices).
+Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020].
+There is an inverse relationship between cutoff distance and mesh resolution; we varied cutoff distances between 8--500km (corresponding to 24--727 vertices).
 For each mesh resolution, we performed k-fold cross validation, using 10 folds with points assigned randomly to each (i.e., no spatial blocking).
 
 ### Modeling species occurrence
 
-As a more complicated case study, we constructed a case study focused on modeling groundfish occurrence from samples taken from the WCGBTS survey, 2003 -- 2023. The primary objectives of this example are to examine the impacts of mesh resolution in the presence of spatial and spatiotemporal variation, and explore cross validation designs that involve spatial blocking. We developed an initial list of 28 species, representing many that are of commercial or conservation interest (Table 1). These species represent a range of average occurrence values (from 2% to more than 60% of hauls), and are expected to differ with respect to spatial variability and spatial ranges, because of differences in life history, ontogeny, and movement.
+As a more complicated case study, we constructed a case study focused on modeling groundfish occurrence from samples taken from the WCGBTS survey, 2003 -- 2023.
+The primary objectives of this example are to examine the impacts of mesh resolution in the presence of spatial and spatiotemporal variation, and explore cross validation designs that involve spatial blocking.
+We developed an initial list of 28 species, representing many that are of commercial or conservation interest (Table 1).
+These species represent a range of average occurrence values (from 2% to more than 60% of hauls), and are expected to differ with respect to spatial variability and spatial ranges, because of differences in life history, ontogeny, and movement.
 
-We applied the same form of the spatiotemporal model to all species so that for observation $i$, 
+We applied the same form of the spatiotemporal model to all species so that for observation $i$,
 
 $$g(u_{i}) = \mathbf{X_{i}}\mathbf{b}+ \omega_{i} + \epsilon_{i,t}$$\
 
-where for convenience the fixed effect design matrix and coefficients are collapsed into  \mathbf{X} and \mathbf{b} respectively, $\omega_{i}$ represents spatial variation $\omega \sim MVN(0,\Sigma_\omega)$ and $\epsilon_{i,t}$ represents spatiotemporal variation that is assumed independent by year, $\epsilon_{t} \sim MVN(0,\Sigma_\epsilon)$. We included year (as a factor) as the only covariate in this model, allowing the average probability of occurrence to vary by year.
+where for convenience the fixed effect design matrix and coefficients are collapsed into $\mathbf{X}$ and $\mathbf{b}$ respectively, $\omega_{i}$ represents spatial variation $\omega \sim MVN(0,\Sigma_\omega)$ and $\epsilon_{i,t}$ represents spatiotemporal variation that is assumed independent by year, $\epsilon_{t} \sim MVN(0,\Sigma_\epsilon)$.
+We included year (as a factor) as the only covariate in this model, allowing the average probability of occurrence to vary by year.
 
-We expanded on our initial case study and developed custom meshes. First, we used a non-convex hull to define a boundary, and incorporated the boundary into each mesh, along with a specified cutoff distance (12--175km). We used 5% offsets for the mesh and boundary (shrinking these toward the data) and set the maximum inner and outer triangle edges at 100 and 500km, respectively. Meshes varied slightly by species, but the range of cutoff values resulted in meshes ranging in size from 51--893 vertices. High-resolution meshes were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].   
+We expanded on our initial case study and developed custom meshes.
+First, we used a non-convex hull to define a boundary, and incorporated the boundary into each mesh, along with a specified cutoff distance (12--175km).
+We used 5% offsets for the mesh and boundary (shrinking these toward the data) and set the maximum inner and outer triangle edges at 100 and 500km, respectively.
+Meshes varied slightly by species, but the range of cutoff values resulted in meshes ranging in size from 51--893 vertices.
+High-resolution meshes were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
 
-For each combination of species and mesh, we performed k-fold cross validation, using 10 folds and random fold assignments, as in our temperature case study. To better understand the impact of spatial blocking in assigning folds, we also performed cross-validation using spatial blocks. Given the rectangular domain of the survey area (Figure 1), we divided the domain into latitudinal bins with a fixed strip height, and assigned each resulting strip to a fold in ascending order (..., 8, 9, 10, 1, 2, ...). We explored a range of strip heights for each species (from 10 to 150km, in steps of 20km) and repeated the model fitting for each. 
+For each combination of species and mesh, we performed k-fold cross validation, using 10 folds and random fold assignments, as in our temperature case study.
+To better understand the impact of spatial blocking in assigning folds, we also performed cross-validation using spatial blocks.
+Given the rectangular domain of the survey area (Figure 1), we divided the domain into latitudinal bins with a fixed strip height, and assigned each resulting strip to a fold in ascending order (..., 8, 9, 10, 1, 2, ...).
+We explored a range of strip heights for each species (from 10 to 150km, in steps of 20km) and repeated the model fitting for each.
 
 ### Estimation
 
 We fit all models in R [@r2023] using the package sdmTMB [@anderson2022], which combines the SPDE approach for spatial models with the speed of maximum marginal log likelihood estimation using Template Model Builder (TMB, [@kristensen_tmb_2016]).
-TMB leverages automatic differentiation to quickly converge on parameter estimates, and it applies the Laplace approximation to integrate out random effects, including spatial or spatiotemporal components. We used the `sdmTMB_cv()` function to implement k-fold cross validation for all examples. Model convergence was assessed using the `sanity()` function in sdmTMB; we only retained models that successfully converged (positive-definite Hessian matrix, maximum absolute log likelihood gradient \< 0.001).
+TMB leverages automatic differentiation to quickly converge on parameter estimates, and it applies the Laplace approximation to integrate out random effects, including spatial or spatiotemporal components.
+We used the `sdmTMB_cv()` function to implement k-fold cross validation for all examples.
+Model convergence was assessed using the `sanity()` function in sdmTMB; we only retained models that successfully converged (positive-definite Hessian matrix, maximum absolute log likelihood gradient \< 0.001).
 
 ### Quantifying performance
 
-To quantify the predictive performance of models with different mesh configurations, we calculated two measures of performance for each case study and applied them separately to training and test data in each fold. For a first metric, we calculated Root Mean Squared Error (RMSE) as a measure of accuracy for the temperature modeling example, and the Area Under the Curve (AUC) statistic from the Receiver Operating Characteristic (ROC) occurrence for our presence absence models of groundfish. Second, we calculated the total log-predictive density (log-score), which evaluates both accuracy and precision.
+To quantify the predictive performance of models with different mesh configurations, we calculated two measures of performance for each case study and applied them separately to training and test data in each fold.
+For a first metric, we calculated Root Mean Squared Error (RMSE) as a measure of accuracy for the temperature modeling example, and the Area Under the Curve (AUC) statistic from the Receiver Operating Characteristic (ROC) occurrence for our presence absence models of groundfish.
+Second, we calculated the total log-predictive density (log-score), which evaluates both accuracy and precision.
 
 ## Results
 
 ### Temperature case study
 
-Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for training data used to fit the model versus out of sample testing data used to evaluate predictions (Figure 2). Predictive density increased for the training data (indicating an improvement in fit) as the mesh resolution increased (Figure 2), and increased for the test data up to 400 vertices. For higher resolution meshes, our results demonstrate a decline in predictive performance for out of sample data. 
+Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for training data used to fit the model versus out of sample testing data used to evaluate predictions (Figure 2).
+Predictive density increased for the training data (indicating an improvement in fit) as the mesh resolution increased (Figure 2), and increased for the test data up to 400 vertices.
+For higher resolution meshes, our results demonstrate a decline in predictive performance for out of sample data.
 
-Examining the relationship between estimated model parameters and cutoff distance (or vertices in the mesh), we found that fixed effect parameters associated with the day of year were largest in magnitude for coarse meshes, and became closer to 0 as the number of vertices increased (Figure 3). Our results also highlight that the highest resolution meshes are associated with the smallest values of spatial range, spatial variability, and observation error variance (Figure 3). As meshes become more coarse, observation error variance increases, and the spatial parameters appear to increase initially before stabilizing (Figure 3).
+Examining the relationship between estimated model parameters and cutoff distance (or vertices in the mesh), we found that fixed effect parameters associated with the day of year were largest in magnitude for coarse meshes, and became closer to 0 as the number of vertices increased (Figure 3).
+Our results also highlight that the highest resolution meshes are associated with the smallest values of spatial range, spatial variability, and observation error variance (Figure 3).
+As meshes become more coarse, observation error variance increases, and the spatial parameters appear to increase initially before stabilizing (Figure 3).
 
 ### Groundfish case study
 
 <!-- Our models of groundfish presence--absence demonstrated that as expected, higher resolution SPDE meshes generally yielded better fits to training data (SI figure).  -->
 
-- spatial range versus vertices is fairly consistent across bin widths, and declines for most species as a function of n (as we expect, from first case study)
+-   spatial range versus vertices is fairly consistent across bin widths, and declines for most species as a function of n (as we expect, from first case study)
 
-- the out of sample log-likelihood is highest when using random fold assigngments and decreases as a function of strip heights. Why? As the strip height increases, the spatial models are trying to predict further and further beyond the range of their data (in some cases, more than the spatial range) and predicitve ability becomes greatly diminished
+-   the out of sample log-likelihood is highest when using random fold assigngments and decreases as a function of strip heights.
+    Why?
+    As the strip height increases, the spatial models are trying to predict further and further beyond the range of their data (in some cases, more than the spatial range) and predicitve ability becomes greatly diminished
 
 Our models of groundfish presence--absence demonstrated that the effect of mesh resolution on the fit to training data with the binomial sub-model was weakest for species with lowest occurrence rates (Pacific Ocean perch, Darkblotched rockfish, Figure 3).
 The relationship between mesh resolution and out of sample predictive performance appeared more variable.
 When spatial structure is ignored in designating folds, finer meshes appear to have the best out of sample performance across species (Figure 3).
 However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole).
 Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
-
-### Sensitivity to fold assignments
-
-
 
 ## Discussion
 
@@ -234,6 +255,18 @@ knitr::include_graphics("figures/Figure_02.png")
 
 ```{r fig3, echo=FALSE, fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
 knitr::include_graphics("figures/Figure_02b.png")
+```
+
+\break
+
+```{r fig6, echo=FALSE, fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
+knitr::include_graphics("figures/mean_index_se.png")
+```
+
+\break
+
+```{r fig_s1, echo=FALSE, fig.cap = "Time series of biomass estimates estimated for each species, across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
+knitr::include_graphics("figures/SI_figure_indices.png")
 ```
 
 \break
