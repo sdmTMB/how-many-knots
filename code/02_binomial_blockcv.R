@@ -152,6 +152,7 @@ for (i in 1:nrow(df)) {
     # df$total_converged[i] <- fit_total$converged
   #}
   saveRDS(df, "output/02_binomial_blockCV.rds")
+  saveRDS(all_pars_to_save, "output/all_pars_to_save_binomial_blockCV.rds")
   print(i)
 }
 
