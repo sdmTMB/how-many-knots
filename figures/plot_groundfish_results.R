@@ -11,7 +11,7 @@ d$species <- capitalize_first(d$species)
 d <- dplyr::filter(d, present_converged == TRUE) |>
   dplyr::group_by(species) |>
   dplyr::mutate(nobs = n()) |>
-  dplyr::filter(nobs >= 20) |>
+  dplyr::filter(nobs >= 22) |> # this results in top 20 
   dplyr::select(-nobs)
 d$species <- as.factor(as.character(d$species))
 
@@ -71,7 +71,10 @@ ggplot(d, aes(cutoff, range, group=bin_width, col = bin_width)) +
   ylab("Estimated spatial range (km)") + 
   scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
   theme_bw() + 
-  theme(strip.background = element_rect(fill="white")) + 
+  theme(strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=4.5),
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+        axis.text.y = element_text(size=8)) + 
   geom_point(data = d_random, aes(cutoff, range), col="black", alpha=0.5)
 ggsave("figures/groundfish_range_v_cutoff.png", height = 5, width = 7)
 
@@ -83,7 +86,22 @@ ggplot(d, aes(cutoff, sigma_O, group=bin_width, col = bin_width)) +
   scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
   theme_bw() + 
   theme(strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=4.5)) + 
+        strip.text = element_text(size=4.5),
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+        axis.text.y = element_text(size=8)) + 
   geom_point(data = d_random, aes(cutoff, sigma_O), col="black", alpha=0.5)
 ggsave("figures/groundfish_sigmaO_v_cutoff.png", height = 5, width = 7)
 
+ggplot(d, aes(cutoff, sigma_E, group=bin_width, col = bin_width)) + 
+  geom_point() + 
+  facet_wrap(~ species, scale="free_y") + 
+  xlab("Cutoff distance (km)") +
+  ylab(expression("Estimated spatiotemporal " * sigma)) + 
+  scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
+  theme_bw() + 
+  theme(strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=4.5),
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+        axis.text.y = element_text(size=8)) + 
+  geom_point(data = d_random, aes(cutoff, sigma_E), col="black", alpha=0.5)
+ggsave("figures/groundfish_sigmaE_v_cutoff.png", height = 5, width = 7)
