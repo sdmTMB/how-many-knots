@@ -173,9 +173,7 @@ Examining the relationship between estimated model parameters and cutoff distanc
 Our results also highlight that the highest resolution meshes are associated with the smallest values of spatial range, spatial variability, and observation error variance (Figure 3).
 As meshes become more coarse, observation error variance increases, and the spatial parameters appear to increase initially before stabilizing (Figure 3).
 
-### Groundfish case study
-
-<!-- Our models of groundfish presence--absence demonstrated that as expected, higher resolution SPDE meshes generally yielded better fits to training data (SI figure).  -->
+### Groundfish occurrence
 
 -   spatial range versus vertices is fairly consistent across bin widths, and declines for most species as a function of n (as we expect, from first case study)
 
@@ -188,6 +186,12 @@ The relationship between mesh resolution and out of sample predictive performanc
 When spatial structure is ignored in designating folds, finer meshes appear to have the best out of sample performance across species (Figure 3).
 However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole).
 Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
+
+### Groundfish biomass indices
+
+Our spatiotemporal models of groundfish biomass included year effects, but no other covariates. For many species in our dataset, we found similar trends and biomass indices across the three cutoff distances examined (15, 50, 100km; Figure S1). In some cases, the scale of trend estimates was shifted slightly higher or lower (aurora rockfish, longspine thornyhead), but the average standard errors of biomass estimates are the same and do not depend on cutoff distances. The exception to this general pattern was that for several rockfish species, both the biomass scale and standard errors did appear to be impacted by the choice of cutoff distance (greenspotted, greenstriped, rosethorn, sharpchin, stripetail; ). 
+
+
 
 ## Discussion
 

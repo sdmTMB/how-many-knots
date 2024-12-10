@@ -66,11 +66,11 @@ saveRDS(sub, "data/catch_cleaned.rds")
 #write.csv(spp_names, "species_names.csv", row.names = FALSE)
 
 # create temperature dataset
-trawlid_date <- dplyr::filter(sub, year==2018) |>
-  dplyr::group_by(trawl_id) %>%
-  dplyr::summarize(date = date[1])
-trawlid_date$month <- substr(trawlid_date$date, 6, 8)
-trawlid_date <- dplyr::filter(trawlid_date, month == "Jun")
-haul <- dplyr::filter(haul, trawl_id %in% trawlid_date$trawl_id)
-saveRDS(haul, "data/june_bottom_temp.rds")
-
+# trawlid_date <- dplyr::filter(sub, year==2018) |>
+#   dplyr::group_by(trawl_id) %>%
+#   dplyr::summarize(date = date[1])
+# trawlid_date$month <- substr(trawlid_date$date, 6, 8)
+# trawlid_date <- dplyr::filter(trawlid_date, month == "Jun")
+# haul <- dplyr::filter(haul, trawl_id %in% trawlid_date$trawl_id)
+# saveRDS(haul, "data/june_bottom_temp.rds")
+# 
