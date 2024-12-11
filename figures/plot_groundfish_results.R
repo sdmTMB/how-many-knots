@@ -105,3 +105,18 @@ ggplot(d, aes(cutoff, sigma_E, group=bin_width, col = bin_width)) +
         axis.text.y = element_text(size=8)) + 
   geom_point(data = d_random, aes(cutoff, sigma_E), col="black", alpha=0.5)
 ggsave("figures/groundfish_sigmaE_v_cutoff.png", height = 5, width = 7)
+
+
+ggplot(d, aes(cutoff, sigma_O/sigma_E, group=bin_width, col = bin_width)) + 
+  geom_point() + 
+  facet_wrap(~ species, scale="free_y") + 
+  xlab("Cutoff distance (km)") +
+  ylab(expression("Ratio of spatial to spatiotemporal " * sigma)) + 
+  scale_color_viridis(option="magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
+  theme_bw() + 
+  theme(strip.background = element_rect(fill="white"),
+        strip.text = element_text(size=4.5),
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+        axis.text.y = element_text(size=8)) + 
+  geom_point(data = d_random, aes(cutoff, sigma_O/sigma_E), col="black", alpha=0.5)
+ggsave("figures/groundfish_sigmaRatio_v_cutoff.png", height = 5, width = 7)

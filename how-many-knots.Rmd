@@ -42,21 +42,21 @@ library(jpeg)
 2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) appraoch.
     One of the most critical decisions for building SPDE--based models is how to construct the spatial approximation ("mesh").
     Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance.
-    Using a publicly available dataset of commercially fished species on the west coast of the USA, we develop two cases studies; first we construct a spatial model of ocean temperature, and second we build spatial models of occurrence and catch rates for 6 groundfish species.
-    We apply a series of sensitivity analyses to each example to understand how mesh resolution affects the predictive accuracy of models predicting species occurrences and catch rates.
+    Using a publicly available dataset of groundfish species on the west coast of the USA, we develop three cases studies; these include a spatial model of ocean temperature from a single year, presence--absence models of 27 species over a 21 year period, and delta-models of the same 27 species combining presence--absence with total catch rates.
+    We use these case studies to understand how mesh resolution affects the predictive accuracy of models, and how parameter inference changes as a function of mesh resolution.
 
-3.  Our results highlight that for spatial models of temperature and catch rates, the finest scale spatial approximations generally overfit the data and resulted in decreased out of sample predictive performance.
-    For each of the species and models considered, there appeared to be an optimal range of vertices (knots) used in constructing the spatial approximation.
-    These results held across a range of spatial cross-validation sampling schemes.
-    We found less clear results when working with binomial presence absence data -- while finer mesh resolutions resulted in better fits to training data,
+3.  Our spatial model of ocean temperature highlights that the finest scale spatial approximations generally overfit the data and result in decreased out of sample predictive performance.
+    Consistent with previous work, these results also highlight that fixed effect parameters of interest decline in magnitude as the complexity of the spatial field increases.
+    Our models of groundfish occurrence and temperature also highlight the relationship between mesh resolution and spatial parameters; as more vertices are added and meshes become higher resolution, estimated spatial ranges and spatial variance parameters generally decline.
+    Finally, our applications of delta--models to groundfish demonstrates that for most species, there is little effect of mesh resolution on derived annual biomass indices.
 
-4.  Results from our work highlight that practicioners should not assume that the performance of SPDE--based models improves with higher resolution.
+4.  Results from our work highlight that practicioners should not assume that the performance of SPDE--based models always improves with higher resolution.
     Instead, each dataset likely has a range of resolutions that results in optimal out of sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis.
     Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (estimates of population abundance, distribution, etc.) when out of sample prediction is a focus of inference.
 
 ## Key words
 
-Spatial, spatiotemporal, Stochastic Partial Differential Equation (SPDE), Integrated Nested Laplace Approximation (INLA), Gaussian random field, mesh, predictive accuracy
+Spatial, spatiotemporal, Stochastic Partial Differential Equation (SPDE), Integrated Nested Laplace Approximation (INLA), Gaussian random field, mesh, predictive accuracy, sdmTMB, cross-validation
 
 ## Introduction
 
@@ -92,7 +92,7 @@ While many previous applications and guidance around INLA have suggested that in
 The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out of sample predictive performance.
 We develop three case studies based on a publicly available dataset of marine fishes in the Northeast Pacific Ocean.
 First we develop a spatial model of ocean temperature from a single year, investigating the effect of mesh resolution on predictive performance and parameter estimation.
-Second, we develop a spatiotemporal model of groundfish occurrence for 28 species, examining the effect of mesh resolution and spatial blocking on predictive performance.
+Second, we develop a spatiotemporal model of groundfish occurrence for 27 species, examining the effect of mesh resolution and spatial blocking on predictive performance.
 Finally, we extend the groundfish occurrence models to trend estimates, and examine potential effects of mesh resolution on standard errors of biomass estimates.
 All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (<https://github.com/ericward-noaa/how-many-knots>) and Zenodo (on publication).
 
@@ -117,7 +117,7 @@ Extending notation used in linear mixed effect models, our model can be expresse
 $$u_{i} = b_{0}+b_{1}x_{i}+ b_{2}x_{i}^{2}+\omega_{i}$$\
 
 where $\omega_{i}$ is the estimated spatial field at the location of the ith observation and modeled as $\omega \sim MVN(0,\Sigma_\omega)$, $b_0$ is the intercept, $x_{i}$ is the day of year, $b_1$ and $b_2$ are estimated coefficients, and $u_{i}$ is the expected value incorporating fixed and random effects.
-Although temperature is expected to exhibit a strong correlation with depth, we excluded depth from the model due to the presence of a pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017].
+Although temperature is strongly correlated with depth, we excluded depth from the model to avoid confounding due to the pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017].
 Finally, we assumed the observed temperature values followed a Gaussian distribution.
 
 Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020].
@@ -128,8 +128,7 @@ For each mesh resolution, we performed k-fold cross validation, using 10 folds w
 
 As a second example, we constructed a case study focused on modeling groundfish occurrence from samples taken from the WCGBTS survey, 2003 -- 2023.
 The primary objectives of this example are to examine the impacts of mesh resolution on predictive performance in the presence of spatial and spatiotemporal variation, and to explore cross validation designs that involve spatial blocking.
-We developed an initial list of 28 species, representing many that are of commercial or conservation interest (Table 1).
-These species represent a range of average occurrence values (from 2% to more than 60% of hauls), and differ with respect to spatial variability and spatial ranges, because of differences in life history, ontogeny, and movement.
+We selected 27 species of commercial or conservation interest, representing a range of occurrence rates (2--60% of hauls) and spatial ranges, driven by differences in life history and movement (Table 1).
 
 We applied the same form of the spatiotemporal model to all species so that for observation $i$,
 
@@ -154,14 +153,14 @@ We explored a range of strip heights for each species (from 10 to 150km, in step
 
 As a third example, we examined the effect of mesh resolution on biomass indices generated from the WCGBTS survey data.
 A common use of bottom trawl survey data is to estimate annual indices of biomass, to be used in downstream integrated population models (stock assessments in fisheries).
-We used data from the same 28 species from our occurrence modeling example (Table 1) to generate standardized indices of biomass [@thorson2015; @thorson2013].
+We used data from the same 27 species from our occurrence modeling example (Table 1) to generate standardized indices of biomass [@thorson2015; @thorson2013].
 For each species, we constructed three meshes with cutoff distances of 15, 50, and 100km.
 Unlike our previous examples, we did not apply cross validation, but fit a single model to the entire dataset.
 For simplicity, we assumed the mesh for each species covered the entire spatial domain of the survey, and we did not filter data a priori (some previous population models have applied depth filters for instance).
-Catch per unit effort (CPUE, kg per km2) was used as a response variable, and because observations are both zero-inflated and skewed, we modeled CPUE as a two-part hurdle- or delta-model, with a Gamma distribution used for positive catches [@pennington1983].
+Catch per unit effort (CPUE, in kg per km2) was used as a response variable, and because observations are both zero-inflated and skewed, we modeled CPUE as a two-part hurdle- or delta-model, with a binomial model used for presence–absence and a Gamma distribution used for positive catches [@pennington1983].
 Like our occurrence models, we only included year effects (as a factor variable) – though in this application, two sets of fixed effects coefficients are estimated, one for each sub-model.
 We also included spatial fields and spatiotemporal fields (assumed independent by year), with a shared range assumed between the spatial and spatiotemporal fields [@anderson2022].
-Standardized indices of biomass were generated by making model predictions on the survey design grid for each year (12000 2nm by 1.5nm cells of equal area; [@keller_northwest_2017]) and then summing across grid cells within a year to get annaul indices of total biomass.
+Standardized indices of biomass were generated by making model predictions on the survey design grid for each year (12000 2nm by 1.5nm cells of equal area; [@keller_northwest_2017]) and then summing across grid cells within a year to get annual indices of total biomass.
 
 ### Estimation
 
@@ -191,19 +190,19 @@ As meshes become more coarse, observation error variance increases, and the spat
 
 ### Groundfish occurrence
 
-Results from our groundfish occurrence models are largely consistent with our temperature models, in that estimated spatial ranges generally become smaller with finer meshes, and there is consistency across bin widths used for spatial blocking.
+For each of the 27 species in our analysis, we fit a total of 64 models with spatial cross-validation.
+To facilitate comparisons across species, we further filtered the results to focus on the 20 species with models that passed the most convergence criteria (\> 22 of 64 models).
+Results from these occurrence models appeared to be largely consistent with our temperature models, in that estimated spatial ranges generally become smaller with finer meshes, and there is consistency across bin widths used for spatial blocking (Figure 4).
+Like our temperature example, spatial variance did appear to decrease as meshes became finer for a number of species (sablefish, lingcod, Figure S2).
+An interesting effect of adding vertices and making more high resolution meshes is that estimates of spatiotemporal variation becamse larger for a number of species (Figure S3).
+A likely explanation for this pattern is that finer meshes allow the spatial field to capture smaller-scale variability -- as the spatial variance declines, a larger portion of total variance becomes redistributed to spatiotemporal variability (Figure S4).
+For a handful of species, we found problematic cases where the estimated spatial range was smaller than the cutoff distances used (aurora, rosethorn, greenstriped rockfishes; Figure 4).
 
-spatial range versus vertices is fairly consistent across bin widths, and declines for most species as a function of n (as we expect, from first case study)
-
--   the out of sample log-likelihood is highest when using random fold assigngments and decreases as a function of strip heights.
-    Why?
-    As the strip height increases, the spatial models are trying to predict further and further beyond the range of their data (in some cases, more than the spatial range) and predicitve ability becomes greatly diminished
-
-Our models of groundfish presence--absence demonstrated that the effect of mesh resolution on the fit to training data with the binomial sub-model was weakest for species with lowest occurrence rates (Pacific Ocean perch, Darkblotched rockfish, Figure 3).
-The relationship between mesh resolution and out of sample predictive performance appeared more variable.
-When spatial structure is ignored in designating folds, finer meshes appear to have the best out of sample performance across species (Figure 3).
-However when spatial blocks are used for cross validation the finest meshes don't consistently outperform coarser ones (finer meshes result in worse predictive performance for lingcod, Petrale sole, and sablefish, and Dover sole).
-Increasing the spatial buffer (range) between test and training data in the `blockCV` package translates to smaller blocks ()
+Results from our occurrence models are also useful in contrasting cross validation with random fold assignments to cross validation with spatial blocking.
+For all species, we found that random fold assignments were associated with the highest predictive log-likelihood for held out test data and these log-likelihoods were highest for the highest resolution meshes (Figure 5).
+We found that as strip widths of spatial blocks increased, the predictive log-likelihood generally declined.
+The mechanism responsible for this pattern is that as the bin size increases, our spatial models are trying to predict further and further beyond the range of data (in some cases, exceeding the spatial range) and predicitve ability becomes greatly diminished.
+As cutoff distances increased relative to strip widths, we found generally less differences in predictive performance across models, because the range of strip widths examined was generally within the cutoff distance (Figure 5).
 
 ### Groundfish biomass indices
 
@@ -217,23 +216,31 @@ The exception to this general pattern was that for several rockfish species, bot
 Spatial and spatiotemporal models are becoming increasingly used in ecology, fisheries, and related sub-fields, in particular to address questions related to changing species distributions in time and space.
 High dimensional datasets with hundreds of observations introduce computational challenges, but complicated spatial structure can be efficiently approximated using the SPDE approach [@miller2020].
 Combined with the INLA software for estimation [@rue_approximate_2009], these tools have become widely accessible.
-Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes can be confusing.
+Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes has been limited.
 
-There are certainly situations where it is advantageous to fit SPDE models with the highest resolution mesh possible.
-Increasing the mesh resolution yields a better approximation of the latent spatial process; our results are consistent with previous research showing that this generally yields a better fit to the data (Figs. 2-4).
-Previous work has shown increasing the SPDE mesh resolution up to a point will make estimates of parameters of interest stabilize [@roste_2020].
-Thus, if a goal of inference is identifying precise relationships between environmental or habitat covariates and species' occupancy or density, then meshes lots of vertices would be preferred to coarser ones.
+In some situations, fitting SPDE models with higher resolution meshes is advantageous.
+Finer meshes provide a better approximation of the latent spatial process by capturing smaller-scale variation and improving model fit to training data.
+Consistent with previous work [@roste_2020], our results show that increasing mesh resolution up to a point stabilizes parameter estimates (Figure 3).
+However, as resolution increases, the spatial fields gain flexibility and may begin to absorb variability that could otherwise be explained by fixed effects.
+This redistribution of variability can obscure the relationships between covariates and the response, particularly when the scale of the covariates aligns poorly with the scale of the mesh.
+For studies focused on identifying precise relationships between environmental covariates and species' occupancy or density, we recommend exploring a range of mesh resolutions, as finer meshes may not always be most appropriate.
+For applications related to index standardization, where the goal is often to derive annual indices of biomass, fitting the highest resolution meshes that are computationally feasible is reasonable for most species.
+A caveat from our results is that for a small number of species examined, the choice of mesh resolution does impact point estimates (and variability of those estimates, Figure 6).
 
-Disadvantages of fine SPDE meshes become more apparent in scenarios where spatial interpolation from a SPDE mesh is a focus of inference; example applications include when predictions are used to derive indices of population abundance, area occupied by a species, or centre of gravity.
-Using a publicly available dataset of groundfishes in the NE Pacific Ocean, we demonstrate that models of occurrence and catch rates with the finest spatial approximations have deteriorating predictive performance for out of sample data.
-Declines in out of sample predictive performance with too many knots appears robust to (1) how data are spatially sampled for cross-validation, (2) the specific penalized complexity priors used for the Matern function, and (3) whether estimation is done using INLA or maximum likelihood with TMB.
-Datasets like the groundfish case study used here (n = 702) support meshes with \~ 300 or fewer knots, though some of the models supported even fewer (in particular, species with low occurrence rates, such as Darkblotched rockfish or Pacific Ocean perch).
+Aside from predictive performance, there are several potential downsides to fitting models with high resolution meshes.
+First, overly complex spatial fields may dominate potential fixed effects of interest, making coefficients for the latter smaller in magnitude.
+Our spatial model of temperature highlights that seasonal effects become smaller for higher resolution meshes, consistent with findings from similar modeling approaches [@dambly2023].
+Second, our results highlight a tradeoff between mesh complexity and estimated spatial parameters.
+As the the spatial field becomes more complex, it does a better job fitting localized spatial variation (otherwise explained by fixed effects, observation error, or other sources of variability), resulting in smaller estimates of spatial range and variance.
+As spatial variances becomes smaller, variability may be redistributed into the spatiotemporal variance component.
 
-While there are a number of alternative ways to measure model performance, we recommend using k-fold cross-validation to explore predictive accuracy across a range of meshes.
-Tools like AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
+While there are a number of alternative ways to measure model performance, we recommend using out of sample methods including k-fold cross-validation to quantify predictive accuracy across a range of meshes.
+Tools such as AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
 Similarly, while WAIC is available in INLA, higher resolution meshes generally correspond to better WAIC values [@roste_2020].
-Results from our comparison of presence absence models of Dover sole suggested some similarity between using the conditional predictive ordinate (CPO) [@pettit1990] and true LOOCV, which the CPO aims to approximate.
-Thus, for large datasets where cross validation may be challenging, CPO may also be useful in identifying meshes with good out of sample predictive ability.
+
+Like with mesh resolution, we recommend taking an iterative approach to exploring the size of spatial blocks used when applying spatial cross-validation.
+Spatial blocks that are too large can result in test sets that are effectively beyond the spatial range the training data, leading to overly pessimistic assessments of model performance.
+Conversely, if blocks are too small, the training and test sets may become highly autocorrelated, inflating performance metrics and leading to biased parameter estimates [@valavi2018].
 
 Comparing the performance of models with alternative spatial complexity obviously introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots.
 This challenge is not unique to models using the INLA--SPDE approach; selecting both the location and number of knots is a general problem for knot--based spatial models.
@@ -242,19 +249,9 @@ Identifying a range of knot values that yield good predictive performance will b
 The optimal mesh resolution for one species may be informative for other species from the same dataset, potentially reducing the computational overhead.
 Though some work has suggested vertices be chosen relative to the spatial range of a dataset [@roste_2020], this advice creates a somewhat circular framework in that the range is usually known after a reasonable spatial model is constructed.
 
-TODO -- CONCLUDING PARAGRAPH, FUTURE RESEARCH ETC 4.
-Future research paragraph - larger comparison across species and datasets - is this a feature of triangulation with inla?
-would we get better estimates from a higher dimensional GP model?
-- don't use WAIC - identifying the appropriate spatial complexity is important for
-
 Recommendations:
 
--   If using these tools for index standardization, and you're comparing model structures (but you don't care about comparing specific covariates, and are not drawing inference about fixed effects themselves), then fitting large meshes is fine and will generate indices that approximate the data well.
-    It is important to note though that most parameters associated with random effects or variances will become smaller as the knots increase, so inference should not be drawn from these.
-    Overly fine meshes may degrade out-of-sample performance due to overfitting
-
--   If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out of sample performance for the test data.
-    In these cases, spatial blocking of cross validation will also impact parameters, and it's useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
+-   If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out of sample performance for the test data. In these cases, spatial blocking of cross validation will also impact parameters, and it's useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
 
 ## Acknowledgements
 
@@ -282,6 +279,18 @@ knitr::include_graphics("figures/Figure_02b.png")
 
 \break
 
+```{r fig4, echo=FALSE, fig.cap = "Estimated spatial range as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+knitr::include_graphics("figures/groundfish_range_v_cutoff.png")
+```
+
+\break
+
+```{r fig5, echo=FALSE, fig.cap = "Estimated predictive log-likelihood as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+knitr::include_graphics("figures/groundfish_loglik_v_cutoff.png")
+```
+
+\break
+
 ```{r fig6, echo=FALSE, fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
 knitr::include_graphics("figures/mean_index_se.png")
 ```
@@ -290,6 +299,24 @@ knitr::include_graphics("figures/mean_index_se.png")
 
 ```{r fig_s1, echo=FALSE, fig.cap = "Time series of biomass estimates estimated for each species, across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
 knitr::include_graphics("figures/SI_figure_indices.png")
+```
+
+\break
+
+```{r fig_s2, echo=FALSE, fig.cap = "Estimated spatial standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+knitr::include_graphics("figures/groundfish_sigmaO_v_cutoff.png")
+```
+
+\break
+
+```{r fig_s3, echo=FALSE, fig.cap = "Estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+knitr::include_graphics("figures/groundfish_sigmaE_v_cutoff.png")
+```
+
+\break
+
+```{r fig_s4, echo=FALSE, fig.cap = "Ratio of estimated spatial standard deviation to estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+knitr::include_graphics("figures/groundfish_sigmaRatio_v_cutoff.png")
 ```
 
 \break
