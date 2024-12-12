@@ -5,6 +5,7 @@ library(INLA)
 library(dplyr)
 library(ggplot2)
 library(future)
+library(sdmTMB) # 0.6.0.9016
 plan(multisession)
 
 set.seed(2021)
@@ -34,7 +35,8 @@ df <- expand.grid(
   "dens_ll_test" = NA,
   "rmse_test" = NA,
   "rmse_train" = NA,
-  "converged" = NA
+  "converged" = NA,
+  "EDF" = NA
 )
 
 for (i in 1:nrow(df)) {
@@ -98,7 +100,7 @@ for (i in 1:nrow(df)) {
     dplyr::summarise(rmse = sqrt(mean((cv_predicted - temperature_at_gear_c_der)^2)) )
   df$rmse_test[i] <- mean(rmse_test$rmse)
   df$rmse_train[i] <- mean(rmse_train)
-  saveRDS(df, file = "output/temp_model_df.rds")
+
   
   # Save parameters
   fixef <- lapply(fit_cv$models, tidy)
@@ -119,8 +121,20 @@ for (i in 1:nrow(df)) {
    all_pars <- rbind(all_pars, pars)
   }
   saveRDS(all_pars, file = "output/temp_model_all_est.rds")
+  
+  # fit the model to the entire dataset to calculate the EDF
+  fit <- sdmTMB::sdmTMB(temperature_at_gear_c_der ~ 1 + zday + I(zday^2),
+                    spatial="on",
+                    mesh = mesh_cv,
+                    data = haul_new)
+  df$EDF[i] <- as.numeric(cAIC(fit, what = "EDF"))
+  saveRDS(df, file = "output/temp_model_df.rds")
 }
 
+ggplot(df, aes(n, EDF)) + 
+  geom_point() + 
+  xlab("Mesh vertices") + ylab("EDF") + 
+  ggtitle("Temperature example")
 # dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
 #   ggplot(aes(n, rmse_train)) + geom_point()
 # dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
