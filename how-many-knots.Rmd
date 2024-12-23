@@ -36,23 +36,23 @@ library(jpeg)
 
 \setlength\parindent{24pt}
 
-1.  Spatial and spatiotemporal models are seeing increasingly used in ecology and related fields to model latent distributions.
-    Applications relying on these methods have used them to track population change over time, assess changing species distributions, and model spatial population processes (predation, habitat use, fishing impacts, etc).
+1.  Spatial and spatiotemporal models are increasingly used in ecology and related fields to model latent distributions.
+    Applications has used these methods to track population change over time, assess changing species distributions, and model spatial population processes such as predation, habitat use, and fishing impacts.
 
-2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) appraoch.
-    One of the most critical decisions for building SPDE--based models is how to construct the spatial approximation ("mesh").
-    Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better performance.
-    Using a publicly available dataset of groundfish species on the west coast of the USA, we develop three cases studies; these include a spatial model of ocean temperature from a single year, presence--absence models of 27 species over a 21 year period, and delta-models of the same 27 species combining presence--absence with total catch rates.
+2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high-dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) approach.
+    One of the most critical decisions for building SPDE-based models is how to construct the finite-element "mesh" spatial approximation.
+    Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better parameter estimation and/or predictive accuracy.
+    Using a publicly available dataset of groundfish species on the west coast of the USA, we develop three cases studies. These include a spatial model of ocean temperature from a single year, presence-absence models of 27 species over a 21-year period, and delta-models of the same 27 species combining presence-absence with catch rates.
     We use these case studies to understand how mesh resolution affects the predictive accuracy of models, and how parameter inference changes as a function of mesh resolution.
 
-3.  Our spatial model of ocean temperature highlights that the finest scale spatial approximations generally overfit the data and result in decreased out of sample predictive performance.
-    Consistent with previous work, these results also highlight that fixed effect parameters of interest decline in magnitude as the complexity of the spatial field increases.
-    Our models of groundfish occurrence and temperature also highlight the relationship between mesh resolution and spatial parameters; as more vertices are added and meshes become higher resolution, estimated spatial ranges and spatial variance parameters generally decline.
-    Finally, our applications of delta--models to groundfish demonstrates that for most species, there is little effect of mesh resolution on derived annual biomass indices.
+3.  Our spatial model of ocean temperature highlights that the finest scale spatial approximations generally overfit the data and result in decreased out-of-sample predictive performance.
+    Consistent with previous work, our results highlight that fixed effect parameters of interest decline in magnitude as the complexity of the spatial field increases.
+    Our models of groundfish occurrence and temperature also highlight the relationship between mesh resolution and spatial parameters: as more vertices are added and meshes increase in resolution, estimated spatial range and variance parameters generally decline in magnitude.
+    Finally, our applications of delta-models to groundfish demonstrates that for most species, there is little effect of mesh resolution on area-weighted biomass indices that integrate model predictions.
 
-4.  Results from our work highlight that practicioners should not assume that the performance of SPDE--based models always improves with higher resolution.
-    Instead, each dataset likely has a range of resolutions that results in optimal out of sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis.
-    Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (estimates of population abundance, distribution, etc.) when out of sample prediction is a focus of inference.
+4.  Results from our work highlight that practitioners should not assume the performance of SPDE-based models always improves with higher resolution.
+    Instead, each dataset likely has a range of resolutions that results in optimal out-of-sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis.
+    Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (e.g., estimates of population abundance, metrics of distribution) when out-of-sample prediction is a focus of inference.
 
 ## Key words
 
@@ -67,34 +67,36 @@ Application of these methods to large georeferenced datasets has become increasi
 A range of statistical approaches are available for modeling spatial processes; examples include generalized additive models (GAMs) [@forney_habitat-based_2012; @murase_application_2009], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@datta_hierarchical_2016; @latimer_hierarchical_2009].
 Estimating these models can be computationally challenging for large georeferenced datasets [@banerjee_hierarchical_2004], necessitating the use of approximations or smoothing.
 One solution to approximation is the Stochastic Partial Differentiation Equation (SPDE) approach [@lindgren_explicit_2011].
-The SPDE method uses Gaussian Markov Random Fields (GMRF) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance method to describe the spatial field, a sparse precision matrix can be estimated [@lindgren_explicit_2011].
+The SPDE method uses Gaussian Markov Random Fields (GMRF) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance to describe the spatial field, a sparse precision matrix can be estimated [@lindgren_explicit_2011].
 Like other approximations, the SPDE approach can be seen as a form of smoothing [@yue2014].
 [@miller2020] provide an excellent summary of the recent SPDE literature, and also show the link between these approaches and smoothing splines.
 
-Advances by [@rue_approximate_2009] have enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields with the Laplace approximation to the posterior distribution [@lindgren_bayesian_2015].
+Advances by @rue_approximate_2009 have enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields with the Laplace approximation to the posterior distribution [@lindgren_bayesian_2015].
 These models have been extended to include the ability to fit geographic barriers (such as islands or lakes), include anisotropic covariance functions, and non-Gaussian data [@bakka_spatial_2018].
 Related software packages to increase the accessibility of these models includes inlabru [@bachl2019] and PointedSDMs [@mostert2023].
-As an alternative to INLA, the SPDE approach has also been integrated with Template Model Builder (TMB; [@kristensen_tmb_2016]) to enable fast marginal maximum likelihood estimation, also via the Laplace approximation.
-Software to implement the TMB--SPDE approach includes VAST [@thorson2019] and sdmTMB [@anderson2022], and comparisons between the INLA and TMB based approaches can be found in [@osgood-zimmerman2022].
+As an alternative to INLA, the SPDE approach has also been integrated with Template Model Builder [TMB, @kristensen_tmb_2016] to enable fast marginal maximum likelihood estimation, also via the Laplace approximation.
+Software to implement the TMB-SPDE approach includes VAST [@thorson2019] and sdmTMB [@anderson2022], and comparisons between the INLA- and TMB-based approaches can be found in @osgood-zimmerman2022.
 
 Constructing spatiotemporal models with INLA or related software involves many of the same considerations as with simpler non-spatial models.
-For example, analysts frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?" Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatiotemporal variation [@anderson_black_2019].
+For example, analysts frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?"
+Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatiotemporal variation [@anderson_black_2019].
 Because of the flexibility in these approaches, choices about how spatial processes are modeled can also affect inference about covariates; fitting an overly complex spatial process may mask effects of important covariates for example [@dambly2023].
 One of the more complicated and important decisions---particularly for models implementing the SPDE approach---lies in specifying the dimensionality of the latent spatial fields [@lindgren_bayesian_2015].
 Unlike Generalized Additive Models (GAMs), which often penalize smooth terms [@wood2003], there are not explicit penalties in overfitting with the SPDE approach in INLA.
 
-A critical yet often overlooked step in SPDE--based modeling is constructing the spatial mesh--a triangular discretization that approximates the spatial field (Figure 1).
+A critical yet often overlooked step in SPDE-based modeling is constructing the finite element spatial "mesh"---a triangular discretization that approximates the spatial field (Figure 1).
 By estimating values of the spatial field at the vertices (also "nodes" or "knots"), the spatial field may be projected to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
 Decisions regarding the mesh, such as its boundary shape, maximum triangle edge length, and minimum triangle angles, significantly impact model accuracy and computational efficiency [@gomez-rubio_bayesian].
 While increasing mesh resolution generally improves the approximation of spatial processes, it may also introduce overfitting, computational challenges, and inflated standard errors for predictions.
-While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes don't always translate into better performance [@huang_evaluating_2017] and we are only aware of several sensitivity analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
+While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes do not always translate into better performance [@huang_evaluating_2017] and we are only aware of a small number of analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
 
-The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out of sample predictive performance.
+The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out-of-sample predictive performance.
 We develop three case studies based on a publicly available dataset of marine fishes in the Northeast Pacific Ocean.
-First we develop a spatial model of ocean temperature from a single year, investigating the effect of mesh resolution on predictive performance and parameter estimation.
+First, we develop a spatial model of ocean temperature from a single year, investigating the effect of mesh resolution on predictive performance and parameter estimation.
 Second, we develop a spatiotemporal model of groundfish occurrence for 27 species, examining the effect of mesh resolution and spatial blocking on predictive performance.
+<!-- TODO: come back to check this sentence: --> 
 Finally, we extend the groundfish occurrence models to trend estimates, and examine potential effects of mesh resolution on standard errors of biomass estimates.
-All data for our analysis are publicly available, and code and data to reproduce our analysis is available on Github (<https://github.com/ericward-noaa/how-many-knots>) and Zenodo (on publication).
+All data for our analysis are publicly available, and code and data to reproduce our analysis are available on Github (<https://github.com/ericward-noaa/how-many-knots>) and Zenodo (on publication).
 
 ## Methods
 
@@ -113,12 +115,12 @@ As a first case study examining the impacts of mesh resolution on predictive abi
 To keep the initial application simple and avoid complications introduced by spatiotemporal variation, we used a single year of data (2018, n = 701 observations).
 Because the survey spans nearly five months (19 May – 15 October), we included day of year as a quadratic predictor, to allow for seasonal changes in mean temperature.
 Extending notation used in linear mixed effect models, our model can be expressed as
-
-$$u_{i} = b_{0}+b_{1}x_{i}+ b_{2}x_{i}^{2}+\omega_{i}$$\
-
+$$
+u_{i} = b_{0}+b_{1}x_{i}+ b_{2}x_{i}^{2}+\omega_{i}
+$$
 where $\omega_{i}$ is the estimated spatial field at the location of the ith observation and modeled as $\omega \sim MVN(0,\Sigma_\omega)$, $b_0$ is the intercept, $x_{i}$ is the day of year, $b_1$ and $b_2$ are estimated coefficients, and $u_{i}$ is the expected value incorporating fixed and random effects.
 Although temperature is strongly correlated with depth, we excluded depth from the model to avoid confounding due to the pronounced spatial gradient along the continental shelf in the California Current system [@keller_northwest_2017].
-Finally, we assumed the observed temperature values followed a Gaussian distribution.
+Finally, we assumed error in the observed temperature values followed a Gaussian distribution.
 
 Mesh resolution was varied by modifying the cutoff distance (representing the distance where two points are treated as a single vertex) because previous research has shown that cutoff distance is one of the more meaningful parameters in determining mesh resolution [@righetto_choice_2020].
 There is an inverse relationship between cutoff distance and mesh resolution that varies slightly dataset to dataset; we varied cutoff distances between 8--500km (corresponding to 24--727 vertices for this example).
@@ -126,15 +128,15 @@ For each mesh resolution, we performed k-fold cross validation, using 10 folds w
 
 ### Modeling species occurrence
 
-As a second example, we constructed a case study focused on modeling groundfish occurrence from samples taken from the WCGBTS survey, 2003 -- 2023.
+As a second example, we constructed a case study focused on modeling groundfish occurrence from samples taken from the WCGBTS survey, 2003--2023.
 The primary objectives of this example are to examine the impacts of mesh resolution on predictive performance in the presence of spatial and spatiotemporal variation, and to explore cross validation designs that involve spatial blocking.
 We selected 27 species of commercial or conservation interest, representing a range of occurrence rates (2--60% of hauls) and spatial ranges, driven by differences in life history and movement (Table 1).
 
 We applied the same form of the spatiotemporal model to all species so that for observation $i$,
-
-$$g(u_{i}) = \mathbf{X_{i}}\mathbf{b}+ \omega_{i} + \epsilon_{i,t}$$\
-
-where for convenience the fixed effect design matrix and coefficients are collapsed into $\mathbf{X}$ and $\mathbf{b}$ respectively, $\omega_{i}$ represents spatial variation $\omega \sim MVN(0,\Sigma_\omega)$ and $\epsilon_{i,t}$ represents spatiotemporal variation that is assumed independent by year, $\epsilon_{t} \sim MVN(0,\Sigma_\epsilon)$.
+$$
+g(u_{i}) = \mathbf{X_{i}}\mathbf{b}+ \omega_{i} + \epsilon_{i,t}
+$$
+where for convenience the fixed effect design matrix and coefficients are collapsed into $\mathbf{X}$ and $\mathbf{b}$ respectively, $\omega_{i}$ represents spatial variation $\omega \sim \operatorname{MVN}(0,\Sigma_\omega)$ and $\epsilon_{i,t}$ represents spatiotemporal variation that is assumed independent by year, $\epsilon_{t} \sim \operatorname{MVN}(0,\Sigma_\epsilon)$.
 We modeled presence--absence with a binomial distribution, $g()$ represents a logit link function.
 We included year (as a factor) as the only covariate in this model, allowing the average probability of occurrence to vary by year.
 
@@ -168,7 +170,6 @@ We fit all models in R [@r2023] using the package sdmTMB [@anderson2022], which 
 TMB leverages automatic differentiation to quickly converge on parameter estimates, and it applies the Laplace approximation to integrate out random effects, including spatial or spatiotemporal components.
 We used the `sdmTMB_cv()` function to implement k-fold cross validation for all examples.
 Model convergence was assessed using the `sanity()` function in sdmTMB; we only retained models that successfully converged (positive-definite Hessian matrix, maximum absolute log likelihood gradient \< 0.001).
-Data and code to replicate our analysis are publicly available on Github, <https://github.com/ericward-noaa/how-many-knots>
 
 ### Quantifying performance
 
@@ -261,72 +262,81 @@ We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shel
 
 ## Figures
 
-```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", out.width="90%", out.height="90%"}
+```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", out.width="70%", fig.align="center"}
 knitr::include_graphics("figures/Figure_01.png")
 ```
 
 \break
 
-```{r fig2, echo=FALSE, fig.cap = "2018 sampled ocean temperature (Celsius) from the 2018 WCGBTS survey (sample locations further offshore are typically at greater depth, and colder). Also shown is the average point-wise log-likelihood as a function of mesh features (cutoff distance, number of vertices), where the log-likelihood is calculated for training and test datasets and normalized by the number of samples in each, using 10-fold cross validation with random fold assignments."}
+```{r fig2, echo=FALSE, fig.cap = "2018 sampled ocean temperature (Celsius) from the 2018 WCGBTS survey (sample locations further offshore are typically at greater depth, and colder). Also shown is the average point-wise log-likelihood as a function of mesh features (cutoff distance, number of vertices), where the log-likelihood is calculated for training and test datasets and normalized by the number of samples in each, using 10-fold cross validation with random fold assignments.", out.width="5in", fig.align="center"}
 knitr::include_graphics("figures/Figure_02.png")
 ```
 
 \break
 
-```{r fig3, echo=FALSE, fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
+```{r fig3, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
 knitr::include_graphics("figures/Figure_02b.png")
 ```
 
 \break
 
-```{r fig4, echo=FALSE, fig.cap = "Estimated spatial range as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+```{r fig4, echo=FALSE, out.width="6in", fig.align="center", fig.cap = "Estimated spatial range as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
 knitr::include_graphics("figures/groundfish_range_v_cutoff.png")
 ```
 
 \break
 
-```{r fig5, echo=FALSE, fig.cap = "Estimated predictive log-likelihood as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+```{r fig5, echo=FALSE, out.width="6in", fig.align="center", fig.cap = "Estimated predictive log-likelihood as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
 knitr::include_graphics("figures/groundfish_loglik_v_cutoff.png")
 ```
 
 \break
 
-```{r fig6, echo=FALSE, fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
+```{r fig6, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
 knitr::include_graphics("figures/mean_index_se.png")
 ```
 
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\setcounter{section}{0}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\resetlinenumber
+\setcounter{page}{1}
+\setcounter{equation}{0}
+
 \break
 
-```{r fig_s1, echo=FALSE, fig.cap = "Time series of biomass estimates estimated for each species, across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
+```{r fig_s1, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Time series of biomass estimates estimated for each species, across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
 knitr::include_graphics("figures/SI_figure_indices.png")
 ```
 
 \break
 
-```{r fig_s2, echo=FALSE, fig.cap = "Estimated spatial standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+```{r fig_s2, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Estimated spatial standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
 knitr::include_graphics("figures/groundfish_sigmaO_v_cutoff.png")
 ```
 
 \break
 
-```{r fig_s3, echo=FALSE, fig.cap = "Estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+```{r fig_s3, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
 knitr::include_graphics("figures/groundfish_sigmaE_v_cutoff.png")
 ```
 
 \break
 
-```{r fig_s4, echo=FALSE, fig.cap = "Ratio of estimated spatial standard deviation to estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
+```{r fig_s4, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Ratio of estimated spatial standard deviation to estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
 knitr::include_graphics("figures/groundfish_sigmaRatio_v_cutoff.png")
 ```
 
 \break
 
-```{r table1, echo=FALSE, fig.cap = "Table of groundfish species included in our presence absence modeling"}
-species <- read.csv("species_names.csv")
-species <- dplyr::rename(species,
-                         "Common name" = common_name,
-                         "Scientific name" = sci_name)
-knitr::kable(species)
+```{r table1, echo=FALSE}
+species <- read.csv(here::here("species_names.csv"))
+species$sci_name <- paste0("*", species$sci_name, "*")
+knitr::kable(species, caption = "Table of groundfish species included in our encounter probability modeling.", col.names = c("Common name", "Scientific name", "Proportion of positive tows"))
 ```
 
 \break
