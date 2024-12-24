@@ -33,7 +33,6 @@ df_test$dens_ll <- df_test$dens_ll / 65.5
 df_plot <- rbind(df_train, df_test) |>
   dplyr::filter(converged == TRUE, n < 655, cutoff <= 300)
 
-
 # Individual plots with explicit white backgrounds
 p2a <- rbind(df_train, df_test) |>
   dplyr::filter(converged == TRUE, n < 655, cutoff <= 300) |>
@@ -42,7 +41,7 @@ p2a <- rbind(df_train, df_test) |>
   xlab("Cutoff distance (km)") +
   ylab("Log density") +
   scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Data") +
-  theme_bw() +
+  ggsidekick::theme_sleek() +
   theme(
     strip.background = element_rect(fill = "white"),
     plot.background = element_rect(fill = "white", color = NA),
@@ -57,7 +56,7 @@ p2b <- rbind(df_train, df_test) |>
   xlab("Mesh vertices (n)") +
   ylab("Log density") +
   scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Data") +
-  theme_bw() +
+  ggsidekick::theme_sleek() +
   theme(
     strip.background = element_rect(fill = "white"),
     plot.background = element_rect(fill = "white", color = NA),
@@ -85,7 +84,7 @@ p1 <- ggplot(coast_proj) +
   scale_color_gradient2(name = "\u00B0C", midpoint = mean(haul$temperature_at_gear_c_der)) +
   xlim(295039.2, 1005243.2) +
   labs(x = "Longitude", y = "Latitude") +
-  theme_bw() +
+  ggsidekick::theme_sleek() +
   theme(
     panel.background = element_rect(fill = "grey30", color = NA), # Ensure white panel
     panel.grid = element_blank()
@@ -99,7 +98,6 @@ g <- cowplot::plot_grid(
 
 # Save plot with white background
 ggsave(plot = g, filename = "figures/Figure_02.png", width = 7, height = 6, bg = "white")
-
 
 # Make 2nd plot of parameters
 all_df <- readRDS(file = "output/temp_model_all_est.rds")
