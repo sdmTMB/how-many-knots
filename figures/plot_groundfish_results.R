@@ -12,6 +12,8 @@ ggsave2 <- function(filename, ...) {
   ggsave(paste0(filename, ".pdf"), ...)
 }
 
+stripwidth_scale <- scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)")
+
 capitalize_first <- function(x) {
   paste0(toupper(substring(x, 1, 1)), substring(x, 2))
 }
@@ -51,7 +53,7 @@ d |>
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab("Estimated spatial range (km)") +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
 
@@ -62,7 +64,7 @@ d |> # divide by 12670 to get average ll per obs
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab("Predicted log likelihood") +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
 # scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
 ggsave2("figures/groundfish_loglik_v_cutoff", height = 6, width = 9)
@@ -73,7 +75,7 @@ ggplot(d, aes(cutoff, range, group = bin_width, col = bin_width)) +
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab("Estimated spatial range (km)") +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
 
@@ -91,15 +93,15 @@ ggplot(d, aes(cutoff, sigma_E, group = bin_width, col = bin_width)) +
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab(expression("Estimated spatiotemporal " * sigma)) +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, sigma_E), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_sigmaE_v_cutoff", height = 6, width = 8.5)
+ggsave2("figures/groundfish_sigmaE_v_cutoff", height = 6, width = 8.75)
 
 ggplot(d, aes(cutoff, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
   geom_point() +
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab(expression("Ratio of spatial to spatiotemporal " * sigma)) +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, sigma_O / sigma_E), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_sigmaRatio_v_cutoff", height = 6, width = 8.7)
