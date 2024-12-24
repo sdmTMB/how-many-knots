@@ -181,7 +181,7 @@ Second, we calculated the total log-predictive density (log-score), which evalua
 
 ### Temperature case study
 
-Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for training data used to fit the model versus out of sample testing data used to evaluate predictions (Figure 2).
+Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for training data used to fit the model versus out-of-sample testing data used to evaluate predictions (Figure 2).
 Predictive density increased for the training data (indicating an improvement in fit) as the mesh resolution increased (Figure 2), and increased for the test data up to 400 vertices.
 For higher resolution meshes, our results demonstrate a decline in predictive performance for out of sample data.
 
@@ -191,18 +191,18 @@ As meshes become more coarse, observation error variance increases, and the spat
 
 ### Groundfish occurrence
 
-For each of the 27 species in our analysis, we fit a total of 64 models with spatial cross-validation.
+For each of the 27 species in our analysis, we fit a total of 64 models with spatial cross validation.
 To facilitate comparisons across species, we further filtered the results to focus on the 20 species with models that passed the most convergence criteria (\> 22 of 64 models).
 Results from these occurrence models appeared to be largely consistent with our temperature models, in that estimated spatial ranges generally become smaller with finer meshes, and there is consistency across bin widths used for spatial blocking (Figure 4).
 Like our temperature example, spatial variance did appear to decrease as meshes became finer for a number of species (sablefish, lingcod, Figure S2).
-An interesting effect of adding vertices and making more high resolution meshes is that estimates of spatiotemporal variation becamse larger for a number of species (Figure S3).
+An interesting effect of adding vertices and making more high resolution meshes is that estimates of spatiotemporal variation became larger for a number of species (Figure S3).
 A likely explanation for this pattern is that finer meshes allow the spatial field to capture smaller-scale variability -- as the spatial variance declines, a larger portion of total variance becomes redistributed to spatiotemporal variability (Figure S4).
 For a handful of species, we found problematic cases where the estimated spatial range was smaller than the cutoff distances used (aurora, rosethorn, greenstriped rockfishes; Figure 4).
 
 Results from our occurrence models are also useful in contrasting cross validation with random fold assignments to cross validation with spatial blocking.
 For all species, we found that random fold assignments were associated with the highest predictive log-likelihood for held out test data and these log-likelihoods were highest for the highest resolution meshes (Figure 5).
 We found that as strip widths of spatial blocks increased, the predictive log-likelihood generally declined.
-The mechanism responsible for this pattern is that as the bin size increases, our spatial models are trying to predict further and further beyond the range of data (in some cases, exceeding the spatial range) and predicitve ability becomes greatly diminished.
+The mechanism responsible for this pattern is that as the bin size increases, our spatial models are trying to predict further and further beyond the range of data (in some cases, exceeding the spatial range) and predictive ability becomes greatly diminished.
 As cutoff distances increased relative to strip widths, we found generally less differences in predictive performance across models, because the range of strip widths examined was generally within the cutoff distance (Figure 5).
 
 ### Groundfish biomass indices
@@ -217,7 +217,7 @@ The exception to this general pattern was that for several rockfish species, bot
 Spatial and spatiotemporal models are becoming increasingly used in ecology, fisheries, and related sub-fields, in particular to address questions related to changing species distributions in time and space.
 High dimensional datasets with hundreds of observations introduce computational challenges, but complicated spatial structure can be efficiently approximated using the SPDE approach [@miller2020].
 Combined with the INLA software for estimation [@rue_approximate_2009], these tools have become widely accessible.
-Though a number of examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes has been limited.
+Though several examples and best practices papers have been written to demonstrate how to construct models or specify hyperparameters [@lindgren_bayesian_2015; @gomez-rubio_bayesian], advice on specifying the SPDE mesh to approximate spatial processes has been limited.
 
 In some situations, fitting SPDE models with higher resolution meshes is advantageous.
 Finer meshes provide a better approximation of the latent spatial process by capturing smaller-scale variation and improving model fit to training data.
@@ -226,33 +226,33 @@ However, as resolution increases, the spatial fields gain flexibility and may be
 This redistribution of variability can obscure the relationships between covariates and the response, particularly when the scale of the covariates aligns poorly with the scale of the mesh.
 For studies focused on identifying precise relationships between environmental covariates and species' occupancy or density, we recommend exploring a range of mesh resolutions, as finer meshes may not always be most appropriate.
 For applications related to index standardization, where the goal is often to derive annual indices of biomass, fitting the highest resolution meshes that are computationally feasible is reasonable for most species.
-A caveat from our results is that for a small number of species examined, the choice of mesh resolution does impact point estimates (and variability of those estimates, Figure 6).
+A caveat from our results, is that for a small number of species examined, the choice of mesh resolution did impact point estimates and variability of those estimates.
 
 Aside from predictive performance, there are several potential downsides to fitting models with high resolution meshes.
 First, overly complex spatial fields may dominate potential fixed effects of interest, making coefficients for the latter smaller in magnitude.
 Our spatial model of temperature highlights that seasonal effects become smaller for higher resolution meshes, consistent with findings from similar modeling approaches [@dambly2023].
-Second, our results highlight a tradeoff between mesh complexity and estimated spatial parameters.
-As the the spatial field becomes more complex, it does a better job fitting localized spatial variation (otherwise explained by fixed effects, observation error, or other sources of variability), resulting in smaller estimates of spatial range and variance.
+Second, our results highlight a trade-off between mesh complexity and estimated spatial parameters.
+As the the spatial field becomes more complex, it can better fit localized spatial variation (otherwise explained by fixed effects, observation error, or other sources of variability), resulting in smaller estimates of spatial range and variance.
 As spatial variances becomes smaller, variability may be redistributed into the spatiotemporal variance component.
 
-While there are a number of alternative ways to measure model performance, we recommend using out of sample methods including k-fold cross-validation to quantify predictive accuracy across a range of meshes.
-Tools such as AIC have also been used to discriminate among these types of models, however AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
+While there are several alternative ways to measure model performance, we recommend using out of sample methods including k-fold cross-validation to quantify predictive accuracy across a range of meshes.
+Tools such as AIC have also been used to discriminate among these types of models; however, AIC is known to be problematic when used as a metric to compare mixed effects models [@harrison_brief_2018] or as a tool to estimate spatial complexity [@velasco_2019].
+<!-- TODO: marginal, conditional... -->
 Similarly, while WAIC is available in INLA, higher resolution meshes generally correspond to better WAIC values [@roste_2020].
 
 Like with mesh resolution, we recommend taking an iterative approach to exploring the size of spatial blocks used when applying spatial cross-validation.
-Spatial blocks that are too large can result in test sets that are effectively beyond the spatial range the training data, leading to overly pessimistic assessments of model performance.
-Conversely, if blocks are too small, the training and test sets may become highly autocorrelated, inflating performance metrics and leading to biased parameter estimates [@valavi2018].
+Spatial blocks that are too large can result in test sets that are effectively beyond the spatial range of the training data, leading to overly pessimistic assessments of model performance.
+Conversely, if blocks are too small, the training and test sets may become highly correlated, inflating performance metrics and leading to biased parameter estimates [@valavi2018].
 
-Comparing the performance of models with alternative spatial complexity obviously introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots.
-This challenge is not unique to models using the INLA--SPDE approach; selecting both the location and number of knots is a general problem for knot--based spatial models.
-Other examples of spatial statistics models that have encountered this issue include machine learning methods (reviewed in [@banerjee2013]), Gaussian Process models [@garton2020] and P-splines [@ruppert2002].
-Identifying a range of knot values that yield good predictive performance will be specific to individual datasets (e.g. magnitude of observation error, spatial autocorrelation, number of observations, type of response).
-The optimal mesh resolution for one species may be informative for other species from the same dataset, potentially reducing the computational overhead.
-Though some work has suggested vertices be chosen relative to the spatial range of a dataset [@roste_2020], this advice creates a somewhat circular framework in that the range is usually known after a reasonable spatial model is constructed.
+Comparing the performance of models with alternative spatial complexity introduces additional computational burdens, both in performing cross-validation, and comparing models with different numbers of knots.
+This challenge is not unique to models using the INLA-SPDE approach; selecting both the location and number of knots is a general problem for knot-based spatial models.
+Other examples of spatial statistics models that have encountered this issue include machine learning methods [reviewed in @banerjee2013], Gaussian Process models [@garton2020] and P-splines [@ruppert2002].
+Identifying a range of knot values that yield good predictive performance will be specific to individual datasets (e.g., magnitude of observation error, spatial autocorrelation, number of observations, type of response).
+The optimal mesh resolution for one species may be informative for other species from the same dataset---potentially reducing the computational overhead.
+Though some work has suggested vertices be chosen relative to the estimated spatial range of a dataset [@roste_2020], this advice creates a somewhat circular framework in that the range is usually known after a reasonable spatial model is constructed.
 
-Recommendations:
-
--   If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out of sample performance for the test data. In these cases, spatial blocking of cross validation will also impact parameters, and it's useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
+<!-- TODO: flesh this out: -->
+If these tools are being used to compare models with different covariates, or to compare spatial parameters (ranges, variance) across models, then we recommend fitting multiple models with a range of mesh resolutions, and focusing on those that fit the training data well and have good out-of-sample performance for the test data. In these cases, spatial blocking of cross validation will also impact parameters, and we think it is useful to make sure that the block (or strip) dimensions are smaller than the spatial range.
 
 ## Acknowledgements
 
@@ -263,7 +263,7 @@ We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shel
 ## Figures
 
 ```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", out.width="70%", fig.align="center"}
-knitr::include_graphics("figures/Figure_01.png")
+knitr::include_graphics("figures/Figure_01.pdf")
 ```
 
 \break
@@ -275,25 +275,25 @@ knitr::include_graphics("figures/Figure_02.png")
 \break
 
 ```{r fig3, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
-knitr::include_graphics("figures/Figure_02b.png")
+knitr::include_graphics("figures/Figure_02b.pdf")
 ```
 
 \break
 
 ```{r fig4, echo=FALSE, out.width="6in", fig.align="center", fig.cap = "Estimated spatial range as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
-knitr::include_graphics("figures/groundfish_range_v_cutoff.png")
+knitr::include_graphics("figures/groundfish_range_v_cutoff.pdf")
 ```
 
 \break
 
 ```{r fig5, echo=FALSE, out.width="6in", fig.align="center", fig.cap = "Estimated predictive log-likelihood as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
-knitr::include_graphics("figures/groundfish_loglik_v_cutoff.png")
+knitr::include_graphics("figures/groundfish_loglik_v_cutoff.pdf")
 ```
 
 \break
 
 ```{r fig6, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
-knitr::include_graphics("figures/mean_index_se.png")
+knitr::include_graphics("figures/mean_index_se.pdf")
 ```
 
 \renewcommand{\thefigure}{S\arabic{figure}}
@@ -310,25 +310,25 @@ knitr::include_graphics("figures/mean_index_se.png")
 \break
 
 ```{r fig_s1, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Time series of biomass estimates estimated for each species, across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
-knitr::include_graphics("figures/SI_figure_indices.png")
+knitr::include_graphics("figures/SI_figure_indices.pdf")
 ```
 
 \break
 
 ```{r fig_s2, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Estimated spatial standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
-knitr::include_graphics("figures/groundfish_sigmaO_v_cutoff.png")
+knitr::include_graphics("figures/groundfish_sigmaO_v_cutoff.pdf")
 ```
 
 \break
 
 ```{r fig_s3, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
-knitr::include_graphics("figures/groundfish_sigmaE_v_cutoff.png")
+knitr::include_graphics("figures/groundfish_sigmaE_v_cutoff.pdf")
 ```
 
 \break
 
 ```{r fig_s4, echo=FALSE, out.width="6.5in", fig.align="center", fig.cap = "Ratio of estimated spatial standard deviation to estimated spatiotemporal standard deviation as a function of mesh cutoff distance, for 20 groundfish species included in our occurrence modeling. Colored points represent different strip widths used for latitudinal spatial block cross validation, and dark grey points represent results from cross validation with random fold assignment."}
-knitr::include_graphics("figures/groundfish_sigmaRatio_v_cutoff.png")
+knitr::include_graphics("figures/groundfish_sigmaRatio_v_cutoff.pdf")
 ```
 
 \break
