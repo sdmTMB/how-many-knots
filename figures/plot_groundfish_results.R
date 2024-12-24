@@ -84,7 +84,7 @@ ggplot(d, aes(cutoff, sigma_O, group = bin_width, col = bin_width)) +
   facet_wrap(~species, scale = "free_y") +
   xlab("Cutoff distance (km)") +
   ylab(expression("Estimated spatial " * sigma)) +
-  scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
+  stripwidth_scale +
   geom_point(data = d_random, aes(cutoff, sigma_O), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_sigmaO_v_cutoff", height = 6, width = 8.5)
 
