@@ -2,6 +2,8 @@ library(ggplot2)
 library(viridis)
 library(dplyr)
 library(scales)
+theme_set(ggsidekick::theme_sleek() +
+    theme(legend.position = "bottom"))
 
 d <- readRDS("output/02_binomial_blockCV.rds")
 
@@ -50,17 +52,7 @@ d |>
   xlab("Cutoff distance (km)") +
   ylab("Estimated spatial range (km)") +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
-  ggsidekick::theme_sleek() +
-  # theme(
-  # strip.text = element_text(size = 8),
-  # ) +
-  # theme(
-  #   strip.background = element_rect(fill = "white"),
-  #   strip.text = element_text(size = 4.5),
-  #   axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-  # ) +
-  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5) +
-  theme(legend.position = "bottom")
+  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
 
 
@@ -71,8 +63,6 @@ d |> # divide by 12670 to get average ll per obs
   xlab("Cutoff distance (km)") +
   ylab("Predicted log likelihood") +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
-  ggsidekick::theme_sleek() +
-  theme(legend.position = "bottom") +
   geom_point(data = d_random, aes(cutoff, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
 # scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
 ggsave2("figures/groundfish_loglik_v_cutoff", height = 6, width = 9)
@@ -84,9 +74,7 @@ ggplot(d, aes(cutoff, range, group = bin_width, col = bin_width)) +
   xlab("Cutoff distance (km)") +
   ylab("Estimated spatial range (km)") +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
-  ggsidekick::theme_sleek() +
-  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5) +
-  theme(legend.position = "bottom")
+  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
 
 ggplot(d, aes(cutoff, sigma_O, group = bin_width, col = bin_width)) +
@@ -95,9 +83,7 @@ ggplot(d, aes(cutoff, sigma_O, group = bin_width, col = bin_width)) +
   xlab("Cutoff distance (km)") +
   ylab(expression("Estimated spatial " * sigma)) +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
-  ggsidekick::theme_sleek() +
-  geom_point(data = d_random, aes(cutoff, sigma_O), col = "black", alpha = 0.5) +
-  theme(legend.position = "bottom")
+  geom_point(data = d_random, aes(cutoff, sigma_O), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_sigmaO_v_cutoff", height = 6, width = 8.5)
 
 ggplot(d, aes(cutoff, sigma_E, group = bin_width, col = bin_width)) +
@@ -106,9 +92,7 @@ ggplot(d, aes(cutoff, sigma_E, group = bin_width, col = bin_width)) +
   xlab("Cutoff distance (km)") +
   ylab(expression("Estimated spatiotemporal " * sigma)) +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
-  ggsidekick::theme_sleek() +
-  geom_point(data = d_random, aes(cutoff, sigma_E), col = "black", alpha = 0.5) +
-  theme(legend.position = "bottom")
+  geom_point(data = d_random, aes(cutoff, sigma_E), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_sigmaE_v_cutoff", height = 6, width = 8.5)
 
 ggplot(d, aes(cutoff, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
@@ -117,7 +101,5 @@ ggplot(d, aes(cutoff, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
   xlab("Cutoff distance (km)") +
   ylab(expression("Ratio of spatial to spatiotemporal " * sigma)) +
   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Cross validation strip width (km)") +
-  ggsidekick::theme_sleek() +
-  geom_point(data = d_random, aes(cutoff, sigma_O / sigma_E), col = "black", alpha = 0.5) +
-  theme(legend.position = "bottom")
+  geom_point(data = d_random, aes(cutoff, sigma_O / sigma_E), col = "black", alpha = 0.5)
 ggsave2("figures/groundfish_sigmaRatio_v_cutoff", height = 6, width = 8.7)
