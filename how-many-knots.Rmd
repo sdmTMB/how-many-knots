@@ -62,31 +62,34 @@ Spatial, spatiotemporal, Stochastic Partial Differential Equation (SPDE), Integr
 ## Introduction
 
 Recent advances in computational methods have revolutionized the estimation of spatial and spatiotemporal models in ecology and related fields [@banerjee_bayesian_2012].
-These models address key questions, such as tracking species abundance over time and space, identifying environmental predictors of occurrence, modeling disease spread, and quantifying range shifts in distributions [@ross_accessible_2012; @miller_spatial_2013; @thorson_comparing_2017].
+These models address key questions, such as tracking species abundance over time and space, identifying environmental predictors of occurrence, modeling disease spread, and quantifying range shifts in distributions [e.g., @ross_accessible_2012; @miller_spatial_2013; @thorson_comparing_2017].
 Application of these methods to large georeferenced datasets has become increasingly important as ecological and environmental challenges demand precise and scalable statistical tools.
 
-A range of statistical approaches are available for modeling spatial processes; examples include generalized additive models (GAMs) [@forney_habitat-based_2012; @murase_application_2009], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@datta_hierarchical_2016; @latimer_hierarchical_2009].
+A range of statistical approaches are available for modeling spatial processes; examples include generalized additive models (GAMs) [@murase_application_2009; @forney_habitat-based_2012; @mgcv], non-parametric approaches [@mutanga_high_2012], and applications of Gaussian random fields [@latimer_hierarchical_2009; @datta_hierarchical_2016].
 Estimating these models can be computationally challenging for large georeferenced datasets [@banerjee_hierarchical_2004], necessitating the use of approximations or smoothing.
 One solution to approximation is the Stochastic Partial Differentiation Equation (SPDE) approach [@lindgren_explicit_2011].
-The SPDE method uses Gaussian Markov Random Fields (GMRF) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance to describe the spatial field, a sparse precision matrix can be estimated [@lindgren_explicit_2011].
+The SPDE method uses Gaussian Markov random fields (GMRFs) to model the conditional distributions of values as only dependent on neighboring points; thus, rather than estimating a full rank covariance to describe the spatial process as a Gaussian random field, a sparse precision matrix can be estimated [@lindgren_explicit_2011].
 Like other approximations, the SPDE approach can be seen as a form of smoothing [@yue2014].
 [@miller2020] provide an excellent summary of the recent SPDE literature, and also show the link between these approaches and smoothing splines.
 
-Advances by @rue_approximate_2009 have enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) as a fast and efficient approximation to estimating high-dimensional Gaussian random fields with the Laplace approximation to the posterior distribution [@lindgren_bayesian_2015].
+Advances by @rue_approximate_2009 enabled the SPDE approach to be implemented with the Integrated Nested Laplace Approximation (INLA) software as a fast and efficient approximation to estimating high-dimensional Gaussian random fields with the Laplace approximation to the posterior distribution [@lindgren_bayesian_2015].
 These models have been extended to include the ability to fit geographic barriers (such as islands or lakes), include anisotropic covariance functions, and non-Gaussian data [@bakka_spatial_2018].
 Related software packages to increase the accessibility of these models includes inlabru [@bachl2019] and PointedSDMs [@mostert2023].
 As an alternative to INLA, the SPDE approach has also been integrated with Template Model Builder [TMB, @kristensen_tmb_2016] to enable fast marginal maximum likelihood estimation, also via the Laplace approximation.
-Software to implement the TMB-SPDE approach includes VAST [@thorson2019] and sdmTMB [@anderson2022], and comparisons between the INLA- and TMB-based approaches can be found in @osgood-zimmerman2022.
+Software to implement the TMB-SPDE approach includes VAST [@thorson2019], sdmTMB [@anderson2022], and tinyVAST [@tinyVAST] and comparisons between the INLA- and TMB-based approaches can be found in @osgood-zimmerman2022.
 
 Constructing spatiotemporal models with INLA or related software involves many of the same considerations as with simpler non-spatial models.
 For example, analysts frequently ask: "Which covariates are most important?" and "Does my model do a satisfactory job of making predictions?"
-Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatiotemporal variation [@anderson_black_2019].
-Because of the flexibility in these approaches, choices about how spatial processes are modeled can also affect inference about covariates; fitting an overly complex spatial process may mask effects of important covariates for example [@dambly2023].
+Spatial or spatiotemporal models may include additional considerations, such as specifying the type and complexity of spatial or spatiotemporal variation [@anderson_black_2019].
+Because of the flexibility in these approaches, choices about how spatial processes are modeled can also affect inference about covariates.
+For example, fitting an overly complex spatial process may mask effects of important covariates [@dambly2023].
 One of the more complicated and important decisions---particularly for models implementing the SPDE approach---lies in specifying the dimensionality of the latent spatial fields [@lindgren_bayesian_2015].
-Unlike Generalized Additive Models (GAMs), which often penalize smooth terms [@wood2003], there are not explicit penalties in overfitting with the SPDE approach in INLA.
+<!-- Unlike (GAMs), which often penalize smooth terms [@wood2003], there are not explicit penalties in overfitting with the SPDE approach in INLA. -->
+<!--SA: I'm not sure this is quite right and they can be equivalent -->
 
 A critical yet often overlooked step in SPDE-based modeling is constructing the finite element spatial "mesh"---a triangular discretization that approximates the spatial field (Figure 1).
-By estimating values of the spatial field at the vertices (also "nodes" or "knots"), the spatial field may be projected to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
+Functionally, the mesh serves two purposes: (1) it defines the sparse matrices required to implement the SPDE approach and (2) it defines how the spatial values estimated at the vertices (also "nodes" or "knots") are projected to coordinates where data are observed or predictions are made [@lindgren_explicit_2011].
+Typically, these vertex values are projected with bilinear interpolation along the mesh triangles [@lindgren_explicit_2011] but piecewise-contestant approximations have also been used [e.g., @thorson2015].
 Decisions regarding the mesh, such as its boundary shape, maximum triangle edge length, and minimum triangle angles, significantly impact model accuracy and computational efficiency [@gomez-rubio_bayesian].
 While increasing mesh resolution generally improves the approximation of spatial processes, it may also introduce overfitting, computational challenges, and inflated standard errors for predictions.
 While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes do not always translate into better performance [@huang_evaluating_2017] and we are only aware of a small number of analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
@@ -96,7 +99,7 @@ We develop three case studies based on a publicly available dataset of marine fi
 First, we develop a spatial model of ocean temperature from a single year, investigating the effect of mesh resolution on predictive performance and parameter estimation.
 Second, we develop a spatiotemporal model of groundfish occurrence for 27 species, examining the effect of mesh resolution and spatial blocking on predictive performance.
 <!-- TODO: come back to check this sentence: --> 
-Finally, we extend the groundfish occurrence models to trend estimates, and examine potential effects of mesh resolution on standard errors of biomass estimates.
+Finally, we extend the groundfish models to derive area-weighted population biomass indices, and examine effects of mesh resolution on trend, scale, and standard errors of biomass estimates.
 All data for our analysis are publicly available, and code and data to reproduce our analysis are available on Github (<https://github.com/ericward-noaa/how-many-knots>) and Zenodo (on publication).
 
 ## Methods
