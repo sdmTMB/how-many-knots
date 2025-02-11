@@ -36,23 +36,24 @@ library(jpeg)
 
 \setlength\parindent{24pt}
 
-1.  Spatial and spatiotemporal models are increasingly used in ecology and related fields to model latent distributions.
-    Applications has used these methods to track population change over time, assess changing species distributions, and model spatial population processes such as predation, habitat use, and fishing impacts.
+1.  Spatial and spatiotemporal models are increasingly used in ecology.
+    Applications have used these methods to track population change over time, assess changing species distributions, and model spatial population processes such as predation, habitat use, and fishing impacts.
 
-2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high-dimensional spatial surfaces (100s or more georeferenced points), and these methods have been accessible in software implementing the Stochastic Partial Differential Equation (SPDE) approach.
-    One of the most critical decisions for building SPDE-based models is how to construct the finite-element "mesh" spatial approximation.
-    Little guidance has been established in constructing these approximations, with many previous applications suggesting that higher resolution meshes result in better parameter estimation and/or predictive accuracy.
-    Using a publicly available dataset of groundfish species on the west coast of the USA, we develop three cases studies. These include a spatial model of ocean temperature from a single year, presence-absence models of 27 species over a 21-year period, and delta-models of the same 27 species combining presence-absence with catch rates.
+2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high-dimensional spatial surfaces. One such advance has been the Stochastic Partial Differential Equation (SPDE) approach that allows for estimating a continuous Gaussian Markov random field that approximates a continuous Gaussian random field.
+    One of the most critical decisions for building SPDE-based models is how to construct a finite-element "mesh" that is required to implement the SPDE.
+    Little guidance has been established in constructing these meshes, with many previous applications suggesting that higher resolution meshes result in better parameter estimation and/or predictive accuracy.
+
+3.  Using a publicly available dataset of groundfish species on the west coast of the USA, we develop three cases studies. These include a spatial model of ocean temperature from a single year, presence-absence models of 27 species over a 21-year period, and delta-models of the same 27 species combining presence-absence with catch rates.
     We use these case studies to understand how mesh resolution affects the predictive accuracy of models, and how parameter inference changes as a function of mesh resolution.
 
-3.  Our spatial model of ocean temperature highlights that the finest scale spatial approximations generally overfit the data and result in decreased out-of-sample predictive performance.
+4.  Our spatial model of ocean temperature highlights that the finest scale meshes generally overfit the data and result in decreased out-of-sample predictive performance.
     Consistent with previous work, our results highlight that fixed effect parameters of interest decline in magnitude as the complexity of the spatial field increases.
     Our models of groundfish occurrence and temperature also highlight the relationship between mesh resolution and spatial parameters: as more vertices are added and meshes increase in resolution, estimated spatial range and variance parameters generally decline in magnitude.
     Finally, our applications of delta-models to groundfish demonstrates that for most species, there is little effect of mesh resolution on area-weighted biomass indices that integrate model predictions.
 
-4.  Results from our work highlight that practitioners should not assume the performance of SPDE-based models always improves with higher resolution.
+5.  Results from our work highlight that practitioners should not assume the performance of SPDE-based models always improves with higher resolution meshes.
     Instead, each dataset likely has a range of resolutions that results in optimal out-of-sample predictive performance; the resolution of these meshes may be identified using spatial cross-validation approaches, such as the sampling procedures used in our analysis.
-    Selecting models with the appropriate spatial complexity is expected to improve parameter estimates and derived quantities (e.g., estimates of population abundance, metrics of distribution) when out-of-sample prediction is a focus of inference.
+    Selecting models with the appropriate spatial complexity is expected to improve the accuracy of parameter estimation and derived quantities (e.g., estimates of population abundance, metrics of distribution) when out-of-sample prediction is a focus of inference.
 
 ## Key words
 
