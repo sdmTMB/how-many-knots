@@ -7,9 +7,7 @@ output:
     includes:
       in_header: options.sty
     latex_engine: xelatex
-  word_document: default
-  html_document: default
-  bookdown::pdf_document2:
+  bookdown::pdf_document2: default
 csl: mee.csl
 editor_options:
   markdown:
@@ -266,19 +264,19 @@ We would like to express our gratitude to Dave Miller, Andy Seaton, and Ole Shel
 
 ## Figures
 
-```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20km are used, translating into 110 and 394 knots (vertices) respectively.", out.width="70%", fig.align="center"}
+```{r fig1, echo=FALSE, fig.cap = "Example of two meshes constructed for the California Current Ecosystem, using the 2018 WCGBTS survey data. Cutoff values of 80 and 20 km are used, translating into 110 and 394 knots (vertices) respectively. The blue polygon illustrates the boundary between the inner and outer mesh where the outer mesh has a larger maximum triangle edge length.", out.width="70%", fig.align="center"}
 knitr::include_graphics("figures/Figure_01.pdf")
 ```
 
 \break
 
-```{r fig2, echo=FALSE, fig.cap = "2018 sampled ocean temperature (Celsius) from the 2018 WCGBTS survey (sample locations further offshore are typically at greater depth, and colder). Also shown is the average point-wise log-likelihood as a function of mesh features (cutoff distance, number of vertices), where the log-likelihood is calculated for training and test datasets and normalized by the number of samples in each, using 10-fold cross validation with random fold assignments.", out.width="5in", fig.align="center"}
-knitr::include_graphics("figures/Figure_02.png")
+```{r fig2, echo=FALSE, fig.cap = "(a) Sampled ocean temperature from the 2018 WCGBTS survey. Sample locations further offshore are typically colder and at greater depth. (b--c) Average point-wise log-likelihood as a function of mesh features (b) cutoff distance and (c) number of vertices, where the log-likelihood is calculated for training and test datasets and normalized by the number of samples in each using 10-fold cross validation with random fold assignments.", out.width="5in", fig.align="center"}
+knitr::include_graphics("figures/Figure_02.pdf")
 ```
 
 \break
 
-```{r fig3, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. Solid lines represent average estimates, and points represent 95% confidence intervals"}
+```{r fig3, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Estimated fixed effect parameters (top row) and spatial parameters (bottom row) as a function of mesh cutoff distance for the ocean temperature example. The panels 'day' and 'day2' represent the linear and quadratic effects of day of year. Solid lines represent mean estimates, and shaded ribbons represent 95% confidence intervals."}
 knitr::include_graphics("figures/Figure_02b.pdf")
 ```
 

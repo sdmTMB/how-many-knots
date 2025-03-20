@@ -49,15 +49,18 @@ p2 <- ggplot() +
   ggsidekick::theme_sleek() +
   xlab("Eastings") +
   ylab("Northings") +
-  geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = viridis(1), size = 0.4)
+  geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = viridis(1), size = 0.4) + coord_fixed()
 
 p1 <- ggplot() +
   gg(mesh1) +
   ggsidekick::theme_sleek() +
   xlab("Eastings") +
   ylab("Northings") +
-  geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = viridis(1), size = 0.4)
+  geom_point(data = plot_df, aes(X, Y), alpha = 0.3, col = viridis(1), size = 0.4) + coord_fixed()
 
-p1 + p2 + plot_layout(ncol = 2, axes = "collect", axis_titles = "collect")
+p1 + p2 + plot_layout(ncol = 2, axes = "collect", axis_titles = "collect") +
+ plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
+ theme(plot.tag = element_text(size = 10))
+
 ggsave("figures/Figure_01.png", width = 7, height = 6)
 ggsave("figures/Figure_01.pdf", width = 7, height = 6)
