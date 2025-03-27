@@ -38,7 +38,7 @@ library(jpeg)
     Applications have used these methods to track population change over time, assess changing species distributions, and model spatial population processes such as predation, habitat use, and fishing impacts.
 
 2.  Computational advances over the last decade have allowed for the rapid estimation of spatial approximations to high-dimensional spatial surfaces.
-    One such advance has been the Stochastic Partial Differential Equation (SPDE) approach that allows for estimating a continuous Gaussian Markov random field that approximates a continuous Gaussian random field.
+    One such advance has been the Stochastic Partial Differential Equation (SPDE) approach that allows for estimating a discrete Gaussian Markov random field with a sparse precision matrix that approximates a continuous Gaussian random field.
     One of the most critical decisions for building SPDE-based models is how to construct a finite-element "mesh" that is required to implement the SPDE.
     Little guidance has been established in constructing these meshes, with many previous applications suggesting that higher resolution meshes result in better parameter estimation and/or predictive accuracy.
 
