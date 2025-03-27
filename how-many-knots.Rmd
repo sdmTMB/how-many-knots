@@ -89,7 +89,7 @@ Functionally, the mesh serves two purposes: (1) it defines the sparse matrices r
 Typically, these vertex values are projected with bilinear interpolation along the mesh triangles [@lindgren_explicit_2011] but piecewise-contestant approximations have also been used [e.g., @thorson2015].
 Decisions regarding the mesh, such as its boundary shape, maximum triangle edge length, and minimum triangle angles, significantly impact model accuracy and computational efficiency [@gomez-rubio_bayesian].
 While increasing mesh resolution generally improves the approximation of spatial processes, it may also introduce overfitting, computational challenges, and inflated standard errors for predictions.
-While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson_guidance_2019], a much smaller number of studies have noted that finer meshes do not always translate into better performance [@huang_evaluating_2017] and we are only aware of a small number of analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
+While many previous applications and guidance around INLA have suggested that increasing the resolution of the mesh improves predictive accuracy [@godana_dynamic_2019; @wilson_evaluating_2021; @williamson_spatiotemporal; @thorson2019], a much smaller number of studies have noted that finer meshes do not always translate into better performance [@huang_evaluating_2017] and we are only aware of a small number of analyses examining the importance of mesh construction [@righetto_choice_2020; @roste_2020; @dambly2023].
 
 The objective of this paper is to examine whether higher resolution spatial approximations using the SPDE approach translate to better predictive accuracy, and provide general recommendations for identifying models with good out-of-sample predictive performance.
 We develop three case studies based on a publicly available dataset of marine fishes in the Northeast Pacific Ocean.
@@ -140,7 +140,7 @@ We expanded on our initial case study and developed custom meshes.
 First, we used a non-convex hull to define a boundary, and incorporated the boundary into each mesh, along with a specified cutoff distance (12--175km).
 We used 5% offsets for the mesh and boundary (shrinking these toward the data) and set the maximum inner and outer triangle edges at 100 and 500km, respectively.
 Meshes varied slightly by species, but the range of cutoff values resulted in meshes ranging in size from 51--893 vertices.
-High-resolution meshes were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson_guidance_2019; @tolimieri_spatio-temporal_2020].
+High-resolution meshes were included as an upper extreme, though many applications of the SPDE approach to datasets with similar dimensions have used 500--600 knots [e.g., @thorson2019; @tolimieri_spatio-temporal_2020].}}
 
 For each combination of species and mesh, we performed k-fold cross validation, using 10 folds and random fold assignments, as in our temperature case study.
 To better understand the impact of spatial blocking in assigning folds, we also performed cross-validation using spatial blocks.
@@ -291,7 +291,7 @@ knitr::include_graphics("figures/groundfish_loglik_v_vertices.pdf")
 
 \break
 
-```{r fig6, echo=FALSE, out.width="5in", fig.align="center", fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
+```{r fig6, echo=FALSE, out.width="4in", fig.align="center", fig.cap = "Mean standard errors of biomass estimates (log space)  estimated for each species across three mesh resolutions (larger cutoff distances result in coarser meshes)."}
 knitr::include_graphics("figures/mean_index_se.pdf")
 ```
 
