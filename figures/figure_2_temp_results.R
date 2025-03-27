@@ -9,6 +9,7 @@ library(raster)
 library(scales)
 library(patchwork)
 library(cowplot)
+theme_set(ggsidekick::theme_sleek())
 
 df <- readRDS(file = "output/temp_model_df.rds")
 
@@ -43,7 +44,8 @@ p2a <- rbind(df_train, df_test) |>
   xlab("Cutoff distance (km)") +
   ylab("Log density") +
   scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Data") +
-  ggsidekick::theme_sleek()
+  ggsidekick::theme_sleek() + 
+  theme(legend.position = "right")
 
 p2b <- rbind(df_train, df_test) |>
   dplyr::filter(converged == TRUE, n < 655, cutoff <= 300) |>
@@ -52,7 +54,8 @@ p2b <- rbind(df_train, df_test) |>
   xlab("Mesh vertices (n)") +
   ylab("Log density") +
   scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Data") +
-  ggsidekick::theme_sleek()
+  ggsidekick::theme_sleek() +
+  theme(legend.position = "right")
 
 # get shoreline data
 map_data <- rnaturalearth::ne_countries(
@@ -66,16 +69,30 @@ coast <- suppressWarnings(suppressMessages(
 coast_proj <- sf::st_transform(coast, crs = 3157) # zone 10
 
 sf::st_bbox(coast_proj)
+
+.xlim <- c(235000, 1015000)
+.ylim <- c(3586000, 5560000)
 # Map plot with explicit white background
 p1 <- ggplot(coast_proj) +
   geom_sf(data = coast_proj, fill = "grey80") +
   geom_point(data = haul, aes(x = X*1000, y = Y*1000, col = temperature_at_gear_c_der), size = 0.3) +
   # scale_color_gradient2(name = "\u00B0C", midpoint = mean(haul$temperature_at_gear_c_der)) +
   scale_color_viridis_c(name = "\u00B0C", option = "G") +
-  labs(x = "Eastings", y = "Northings") +
+  labs(x = "", y = "") +
   ggsidekick::theme_sleek() +
-  coord_sf(xlim = c(235000, 1015000), ylim = c(3586000, 5560000))
-
+  coord_sf(xlim = .xlim, ylim = .ylim) +
+  annotate(geom = "text", x = max(.xlim) - 310000, y = mean(.ylim) + 100000, label = "United States", size = 3, colour = "grey10", hjust = 0.5, vjust = 0.5) +
+  annotate(geom = "text", x = max(.xlim) - 310000, y = mean(.ylim) + 1000000, label = "Canada", size = 3, colour = "grey10", hjust = 0.5, vjust = 0.5) +
+  ggspatial::annotation_north_arrow(
+    location = "bl", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.05, "in"),
+    height = unit(1.2, "cm"),
+    width = unit(1.2, "cm"),
+    style = ggspatial::north_arrow_nautical(
+      fill = c("grey40", "white"),
+      line_col = "grey20"
+    )
+  )
 p1
 
 combined_plot <- (p2a / p2b) + plot_layout(guides = "collect")
