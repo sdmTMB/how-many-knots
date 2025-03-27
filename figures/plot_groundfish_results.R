@@ -75,7 +75,7 @@ d |> # divide by 12670 to get average ll per obs
   ggplot(aes(n, present_dens_ll / 12670, group = bin_width, col = bin_width)) +
   geom_line() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Mesh vertices") +
+  xlab("Mesh vertices (n)") +
   ylab("Predicted log likelihood") +
   stripwidth_scale +
   geom_point(data = d_random, aes(n, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
@@ -101,7 +101,7 @@ d |> # divide by 12670 to get average ll per obs
   xlab("Mesh vertices (n)") +
   ylab("Predicted log likelihood") +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
+  geom_point(data = d_random, aes(n, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
 # scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
 ggsave2("figures/groundfish_loglik_v_vertices", height = 6, width = 9)
 
