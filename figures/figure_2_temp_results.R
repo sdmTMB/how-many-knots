@@ -1,4 +1,4 @@
-devtools::install_github("seananderson/ggsidekick")
+# devtools::install_github("seananderson/ggsidekick")
 library(ggsidekick)
 library(sf)
 library(dplyr)
@@ -56,24 +56,25 @@ p2b <- rbind(df_train, df_test) |>
 
 # get shoreline data
 map_data <- rnaturalearth::ne_countries(
-  scale = "medium",
-  returnclass = "sf", country = "united states of america")
+  scale = "large",
+  returnclass = "sf", country = c("canada", "united states of america", "mexico"))
 # Crop the polygon for plotting and efficiency:
 # st_bbox(map_data) # find the rough coordinates
 coast <- suppressWarnings(suppressMessages(
   sf::st_crop(map_data,
-              c(xmin = -130, ymin = 30, xmax = -117, ymax = 50))))
+              c(xmin = -130, ymin = 30, xmax = -107, ymax = 55))))
 coast_proj <- sf::st_transform(coast, crs = 3157) # zone 10
 
+sf::st_bbox(coast_proj)
 # Map plot with explicit white background
 p1 <- ggplot(coast_proj) +
-  geom_sf(data = coast_proj, fill = "grey30") +
+  geom_sf(data = coast_proj, fill = "grey80") +
   geom_point(data = haul, aes(x = X*1000, y = Y*1000, col = temperature_at_gear_c_der), size = 0.3) +
   # scale_color_gradient2(name = "\u00B0C", midpoint = mean(haul$temperature_at_gear_c_der)) +
   scale_color_viridis_c(name = "\u00B0C", option = "G") +
   labs(x = "Eastings", y = "Northings") +
   ggsidekick::theme_sleek() +
-  coord_sf()
+  coord_sf(xlim = c(235000, 1015000), ylim = c(3586000, 5560000))
 
 p1
 
@@ -103,7 +104,7 @@ all_df$term[which(all_df$term == "phi")] <- "Obs SD"
 all_df$term[which(all_df$term == "range")] <- "Spatial range"
 all_df$term[which(all_df$term == "sigma_O")] <- "Spatial SD"
 all_df$term[which(all_df$term == "zday")] <- "day"
-all_df$term <- factor(all_df$term, levels = c("Intercept", "day", "day2", "Spatial range", "Spatial SD", "Observation error SD"))
+all_df$term <- factor(all_df$term, levels = c("Intercept", "day", "day2", "Spatial range", "Spatial SD", "Obs SD"))
 
 # dplyr::filter(all_df, term == "Intercept") |> as.data.frame()
 
@@ -113,7 +114,7 @@ parsed_labels <- c(
   "day2" = "day^2",
   "Spatial range" = "Spatial~range~kappa",  
   "Spatial SD" = "Spatial~sigma",
-  "Obs SD" = "Obs~sigma"
+  "Obs SD" = "Observation~sigma"
 )
 
 ggplot(all_df, aes(n, mean_estimate)) +
