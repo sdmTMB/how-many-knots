@@ -1,4 +1,4 @@
-devtools::install_github("seananderson/ggsidekick")
+# devtools::install_github("seananderson/ggsidekick")
 library(ggsidekick)
 library(sf)
 library(inlabru)
