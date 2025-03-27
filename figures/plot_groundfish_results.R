@@ -60,9 +60,9 @@ d <- d |>
 #   geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 # ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
 
-
 d |>
-  ggplot(aes(cutoff, range, group = bin_width, col = bin_width)) +
+  ggplot(aes(n, range, group = bin_width, col = bin_width)) +
+  geom_line() +
   facet_wrap(~species, scale = "free_y") +
   xlab("Mesh vertices (n)") +
   ylab("Estimated spatial range (km)") +
