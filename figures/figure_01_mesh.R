@@ -1,7 +1,10 @@
+devtools::install_github("seananderson/ggsidekick")
+library(ggsidekick)
 library(sf)
 library(inlabru)
 library(INLA)
 library(dplyr)
+library(sp)
 # library(fmesher)
 library(lubridate)
 library(patchwork)
@@ -14,7 +17,7 @@ haul$date_formatted <- as.Date(as.numeric(haul$date_formatted), origin = "1970-0
 
 haul$year <- lubridate::year(haul$date_formatted)
 haul <- dplyr::filter(haul, year == 2018)
-
+ 
 coordinates(haul) <- c("X", "Y")
 
 # create boundary, same for all meshes

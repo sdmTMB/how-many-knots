@@ -1,3 +1,5 @@
+devtools::install_github("seananderson/ggsidekick")
+library(ggsidekick)
 library(ggplot2)
 library(viridis)
 library(dplyr)
@@ -47,17 +49,30 @@ d_random <- d_random |>
 d <- d |>
   mutate(species_wrapped = gsub(" ", "\\\n", species))
 
+###### Spatial range plots
+# d |>
+#   ggplot(aes(cutoff, range, group = bin_width, col = bin_width)) +
+#   geom_line() +
+#   facet_wrap(~species, scale = "free_y") +
+#   xlab("Cutoff distance (km)") +
+#   ylab("Estimated spatial range (km)") +
+#   stripwidth_scale +
+#   geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
+# ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
+
+
 d |>
-  ggplot(aes(cutoff, range, group = bin_width, col = bin_width)) +
+  ggplot(aes(n, range, group = bin_width, col = bin_width)) +
   geom_line() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Cutoff distance (km)") +
+  xlab("Mesh vertices (n)") +
   ylab("Estimated spatial range (km)") +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
+  geom_point(data = d_random, aes(n, range), col = "black", alpha = 0.5) +
+  geom_line(data = d_random, aes(n, cutoff), col = "black")
+ggsave2("figures/groundfish_range_v_n", height = 6, width = 8)
 
-
+###### Log likelihood plots
 d |> # divide by 12670 to get average ll per obs
   ggplot(aes(cutoff, present_dens_ll / 12670, group = bin_width, col = bin_width)) +
   geom_line() +
@@ -69,39 +84,41 @@ d |> # divide by 12670 to get average ll per obs
 # scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
 ggsave2("figures/groundfish_loglik_v_cutoff", height = 6, width = 9)
 
-# load in the parameters estimates
-ggplot(d, aes(cutoff, range, group = bin_width, col = bin_width)) +
-  geom_point() +
+d |> # divide by 12670 to get average ll per obs
+  ggplot(aes(n, present_dens_ll / 12670, group = bin_width, col = bin_width)) +
+  geom_line() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Cutoff distance (km)") +
-  ylab("Estimated spatial range (km)") +
+  xlab("Mesh vertices (n)") +
+  ylab("Predicted log likelihood") +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
+  geom_point(data = d_random, aes(cutoff, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
+# scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
+ggsave2("figures/groundfish_loglik_v_vertices", height = 6, width = 9)
 
-ggplot(d, aes(cutoff, sigma_O, group = bin_width, col = bin_width)) +
+
+ggplot(d, aes(n, sigma_O, group = bin_width, col = bin_width)) +
   geom_point() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Cutoff distance (km)") +
+  xlab("Mesh vertices (n)") +
   ylab(expression("Estimated spatial " * sigma)) +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, sigma_O), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_sigmaO_v_cutoff", height = 6, width = 8.5)
+  geom_point(data = d_random, aes(n, sigma_O), col = "black", alpha = 0.5)
+ggsave2("figures/groundfish_sigmaO_v_vertices", height = 6, width = 8.5)
 
-ggplot(d, aes(cutoff, sigma_E, group = bin_width, col = bin_width)) +
+ggplot(d, aes(n, sigma_E, group = bin_width, col = bin_width)) +
   geom_point() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Cutoff distance (km)") +
+  xlab("Mesh vertices (n)") +
   ylab(expression("Estimated spatiotemporal " * sigma)) +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, sigma_E), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_sigmaE_v_cutoff", height = 6, width = 8.75)
+  geom_point(data = d_random, aes(n, sigma_E), col = "black", alpha = 0.5)
+ggsave2("figures/groundfish_sigmaE_v_vertices", height = 6, width = 8.75)
 
-ggplot(d, aes(cutoff, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
+ggplot(d, aes(n, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
   geom_point() +
   facet_wrap(~species, scale = "free_y") +
-  xlab("Cutoff distance (km)") +
+  xlab("Mesh vertices (n)") +
   ylab(expression("Ratio of spatial to spatiotemporal " * sigma)) +
   stripwidth_scale +
-  geom_point(data = d_random, aes(cutoff, sigma_O / sigma_E), col = "black", alpha = 0.5)
-ggsave2("figures/groundfish_sigmaRatio_v_cutoff", height = 6, width = 8.7)
+  geom_point(data = d_random, aes(n, sigma_O / sigma_E), col = "black", alpha = 0.5)
+ggsave2("figures/groundfish_sigmaRatio_v_vertices", height = 6, width = 8.7)
