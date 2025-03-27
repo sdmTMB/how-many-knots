@@ -92,6 +92,9 @@ ggsave(filename = "figures/Figure_02.png", width = 7, height = 6, bg = "white")
 ggsave(filename = "figures/Figure_02.pdf", width = 7, height = 6)
 
 # Make 2nd plot of parameters
+df <- readRDS(file = "output/temp_model_df.rds")
+lu <- dplyr::select(df, cutoff, n) |> distinct() # to join on n (vertices)
+
 all_df <- readRDS(file = "output/temp_model_all_est.rds")
 all_df <- dplyr::left_join(all_df, df[,c("cutoff","n")]) # join in mesh n
 all_df$term[which(all_df$term == "(Intercept)")] <- "Intercept"
@@ -100,9 +103,9 @@ all_df$term[which(all_df$term == "phi")] <- "Obs SD"
 all_df$term[which(all_df$term == "range")] <- "Spatial range"
 all_df$term[which(all_df$term == "sigma_O")] <- "Spatial SD"
 all_df$term[which(all_df$term == "zday")] <- "day"
-all_df$term <- factor(all_df$term, levels = c("Intercept", "day", "day2", "Spatial range", "Spatial SD", "Obs SD"))
+all_df$term <- factor(all_df$term, levels = c("Intercept", "day", "day2", "Spatial range", "Spatial SD", "Observation error SD"))
 
-dplyr::filter(all_df, term == "Intercept") |> as.data.frame()
+# dplyr::filter(all_df, term == "Intercept") |> as.data.frame()
 
 parsed_labels <- c(
   "Intercept" = "Intercept",
@@ -124,7 +127,7 @@ ggplot(all_df, aes(n, mean_estimate)) +
     scales = "free_y",
     labeller = labeller(term = as_labeller(parsed_labels, label_parsed))
   ) +
-  xlab("Cutoff distance (km)") +
+  xlab("Mesh vertices") +
   ylab("Estimate") +
   scale_x_continuous(
     limits = c(0, NA),

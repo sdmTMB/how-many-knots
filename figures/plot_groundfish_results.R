@@ -62,8 +62,7 @@ d <- d |>
 
 
 d |>
-  ggplot(aes(n, range, group = bin_width, col = bin_width)) +
-  geom_line() +
+  ggplot(aes(cutoff, range, group = bin_width, col = bin_width)) +
   facet_wrap(~species, scale = "free_y") +
   xlab("Mesh vertices (n)") +
   ylab("Estimated spatial range (km)") +
@@ -71,6 +70,17 @@ d |>
   geom_point(data = d_random, aes(n, range), col = "black", alpha = 0.5) +
   geom_line(data = d_random, aes(n, cutoff), col = "black")
 ggsave2("figures/groundfish_range_v_n", height = 6, width = 8)
+
+d |> # divide by 12670 to get average ll per obs
+  ggplot(aes(n, present_dens_ll / 12670, group = bin_width, col = bin_width)) +
+  geom_line() +
+  facet_wrap(~species, scale = "free_y") +
+  xlab("Mesh vertices") +
+  ylab("Predicted log likelihood") +
+  stripwidth_scale +
+  geom_point(data = d_random, aes(n, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
+# scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
+ggsave2("figures/groundfish_loglik_v_n", height = 6, width = 9)
 
 ###### Log likelihood plots
 d |> # divide by 12670 to get average ll per obs
@@ -98,6 +108,7 @@ ggsave2("figures/groundfish_loglik_v_vertices", height = 6, width = 9)
 
 ggplot(d, aes(n, sigma_O, group = bin_width, col = bin_width)) +
   geom_point() +
+  geom_line() +
   facet_wrap(~species, scale = "free_y") +
   xlab("Mesh vertices (n)") +
   ylab(expression("Estimated spatial " * sigma)) +
@@ -107,6 +118,7 @@ ggsave2("figures/groundfish_sigmaO_v_vertices", height = 6, width = 8.5)
 
 ggplot(d, aes(n, sigma_E, group = bin_width, col = bin_width)) +
   geom_point() +
+  geom_line() +
   facet_wrap(~species, scale = "free_y") +
   xlab("Mesh vertices (n)") +
   ylab(expression("Estimated spatiotemporal " * sigma)) +
@@ -116,6 +128,7 @@ ggsave2("figures/groundfish_sigmaE_v_vertices", height = 6, width = 8.75)
 
 ggplot(d, aes(n, sigma_O / sigma_E, group = bin_width, col = bin_width)) +
   geom_point() +
+  geom_line() +
   facet_wrap(~species, scale = "free_y") +
   xlab("Mesh vertices (n)") +
   ylab(expression("Ratio of spatial to spatiotemporal " * sigma)) +

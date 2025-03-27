@@ -177,18 +177,17 @@ Second, we calculated the total log-predictive density (log-score), which evalua
 
 ### Temperature case study
 
-Our spatial models of ocean temperature demonstrated that the relationship between cutoff distance (or vertices in the mesh) and predictive density was generally in opposite directions for training data used to fit the model versus out-of-sample testing data used to evaluate predictions (Figure 2).
-Predictive density increased for the training data (indicating an improvement in fit) as the mesh resolution increased (Figure 2), and increased for the test data up to 400 vertices.
-For higher resolution meshes, our results demonstrate a decline in predictive performance for out of sample data.
+Our spatial models of ocean temperature (Figure 2a) demonstrated that average log density of training data generally increased with mesh resolution (Figure 2b,c). However, average log density for out-of-sample testing data peaked at an intermediate mesh complexity of about 400 vertices and declined thereafter (Figure 2b,c).
+For higher resolution meshes, our results demonstrate a decline in predictive performance for out-of-sample data.
 
-Examining the relationship between estimated model parameters and cutoff distance (or vertices in the mesh), we found that fixed effect parameters associated with the day of year were largest in magnitude for coarse meshes, and became closer to 0 as the number of vertices increased (Figure 3).
-Our results also highlight that the highest resolution meshes are associated with the smallest values of spatial range, spatial variability, and observation error variance (Figure 3).
-As meshes become more coarse, observation error variance increases, and the spatial parameters appear to increase initially before stabilizing (Figure 3).
+Examining the relationship between estimated model parameters and vertices in the mesh, we find that the intercept, spatial range, and spatial SD were poorly estimated at coarser meshes (under ~ 200 vertices) (Figure 3).
+Beyond a peak at approximately 100 vertices, the spatial range declined with increasing mesh complexity.
+The spatial variance and observation error variance both decreased with increasing mesh complexity (Figure 3).
 
 ### Groundfish occurrence
 
 For each of the 27 species in our analysis, we fit a total of 64 models with spatial cross validation.
-To facilitate comparisons across species, we further filtered the results to focus on the 20 species with models that passed the most convergence criteria (\> 22 of 64 models).
+To facilitate comparisons across species, we further filtered the results to focus on the 20 species with models that most frequently passed the convergence criteria (\> 22 of 64 models).
 Results from these occurrence models appeared to be largely consistent with our temperature models, in that estimated spatial ranges generally become smaller with finer meshes, and there is consistency across bin widths used for spatial blocking (Figure 4).
 Like our temperature example, spatial variance did appear to decrease as meshes became finer for a number of species (sablefish, lingcod, Figure S2).
 An interesting effect of adding vertices and making more high resolution meshes is that estimates of spatiotemporal variation became larger for a number of species (Figure S3).
