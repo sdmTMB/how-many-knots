@@ -68,6 +68,7 @@ d |>
   ylab("Estimated spatial range (km)") +
   stripwidth_scale +
   geom_point(data = d_random, aes(n, range), col = "black", alpha = 0.5) +
+	scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
   geom_line(data = d_random, aes(n, cutoff), col = "black")
 ggsave2("figures/groundfish_range_v_n", height = 6, width = 8)
 
