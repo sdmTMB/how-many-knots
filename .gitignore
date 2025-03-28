@@ -4,3 +4,9 @@
 .Ruserdata
 .DS_Store
 output/.DS_Store
+knots.bbl
+knots.blg
+knots.fdb_latexmk
+knots.fls
+knots.out
+knots.synctex.gz
