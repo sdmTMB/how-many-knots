@@ -11,7 +11,8 @@ haul <- readRDS("data/haul_cleaned.rds")
 catch <- readRDS("data/catch_cleaned.rds")
 haul$trawl_id <- as.numeric(haul$trawl_id)
 
-run_cv <- function(cutoff, bin_width, species, bins_to_folds = bin_to_folds, do_full_fit = FALSE, parallel = TRUE) {
+
+run_cv <- function(cutoff, bin_width, species, do_full_fit = FALSE, parallel = TRUE) {
   catch_sub <- dplyr::filter(catch, common_name == species)
 
   # Join catch and haul data
@@ -42,7 +43,6 @@ run_cv <- function(cutoff, bin_width, species, bins_to_folds = bin_to_folds, do_
     convex = -0.05 # Negative values are interpreted as fractions of the approximate initial set
   )
 
-  # create mesh
   inla_mesh <- fmesher::fm_mesh_2d_inla(
     loc = sp::coordinates(joined_dat),
     boundary = boundary,
@@ -58,15 +58,15 @@ run_cv <- function(cutoff, bin_width, species, bins_to_folds = bin_to_folds, do_
   if (!do_full_fit) {
     cat("Cross validation model fit\n")
     fit_cv <- try(sdmTMB_cv(
-      present ~ -1 + as.factor(year) + poly(log_depth_scaled, 2),
+      cpue_kg_km2 ~ -1 + as.factor(year) + poly(log_depth_scaled, 2),
       data = joined_dat,
       mesh = mesh,
       time = "year",
       spatial = "on",
-      spatiotemporal = "iid",
+      spatiotemporal = "off",
       anisotropy = TRUE,
       share_range = TRUE,
-      family = binomial(),
+      family = tweedie(),
       parallel = parallel,
       k_folds = length(unique(joined_dat$fold)),
       fold_ids = joined_dat$fold
@@ -76,30 +76,39 @@ run_cv <- function(cutoff, bin_width, species, bins_to_folds = bin_to_folds, do_
   if (do_full_fit) {
     cat("Full model fit\n")
     fit_full <- try(sdmTMB(
-      present ~ -1 + as.factor(year) + poly(log_depth_scaled, 2),
+      cpue_kg_km2 ~ -1 + as.factor(year) + poly(log_depth_scaled, 2),
       data = joined_dat,
+      offset = "log_area_swept_ha",
       mesh = mesh,
       time = "year",
       spatial = "on",
-      spatiotemporal = "iid",
+      spatiotemporal = "off",
       anisotropy = TRUE,
       share_range = TRUE,
-      family = binomial()
+      family = tweedie()
     ), silent = TRUE)
     if (class(fit_full) != "try-error") {
       tidy_pars <- tidy(fit_full, "ran_pars")
       tidy_pars <- filter(tidy_pars, term != "range")
       aniso <- sdmTMB:::print_anisotropy(fit_full, return_dat = TRUE)
       tidy_pars <- bind_rows(
-        tidy_pars,
         tibble(term = "range_a", estimate = as.numeric(aniso$sp$a)),
+        tidy_pars,
         tibble(term = "range_b", estimate = as.numeric(aniso$sp$b)),
         tibble(term = "angle", estimate = as.numeric(aniso$sp$degree))
       )
+      s <- sanity(fit_full, silent = TRUE, gradient_thresh = 0.01)
+      tidy_pars$sanity <- s$hessian_ok && s$eigen_values_ok && s$nlminb_ok && s$gradients_ok
       tidy_pars$cutoff <- cutoff
       tidy_pars$bin_width <- bin_width
       tidy_pars$species <- species
       tidy_pars$n <- mesh$mesh$n
+      tidy_pars$cAIC <- tryCatch(as.numeric(cAIC(fit_full, what = "cAIC")), error = function(e) NA)
+      edf <- tryCatch(cAIC(fit_full, what = "EDF"), error = function(e) NA)
+      if (all(!is.na(edf))) {
+        # tidy_pars$edf_epsilon <- edf[["epsilon_st"]]
+        tidy_pars$edf_omega <- edf[["omega_s"]]
+      }
       return(tidy_pars)
     } else {
       return(
@@ -112,13 +121,18 @@ run_cv <- function(cutoff, bin_width, species, bins_to_folds = bin_to_folds, do_
     ll <- data.frame(cutoff = cutoff, bin_width = bin_width, species = species)
     ll$n <- mesh$mesh$n
     ll$converged <- fit_cv$converged
-    ll$present_dens_ll <- mean(fit_cv$fold_loglik) # total log density
-    ll$present_sd_ll <- sd(fit_cv$fold_loglik)
-    ll$present_converged <- fit_cv$converged
-    ll$cAIC <- as.numeric(cAIC(fit_full, what = "cAIC"))
-    edf <- cAIC(fit_full, what = "EDF")
-    ll$edf_epsilon <- edf[["epsilon_st"]]
-    ll$edf_omega <- edf[["omega_s"]]
+    ll$test_dens_ll <- mean(fit_cv$fold_loglik) # total log density
+    ll$converged <- fit_cv$converged
+    ll_train <- list()
+    for (ii in seq_len(max(joined_dat$fold))) {
+      # predict to whole dataset, test and train
+      pred <- predict(fit_cv$models[[ii]]) |> dplyr::filter(fold != ii)
+      joined_dat_train <- dplyr::filter(joined_dat, fold != ii)
+      p <- plogis(fit_cv$models[[ii]]$model$par[["thetaf"]]) + 1
+      phi <- exp(fit_cv$models[[ii]]$model$par[["ln_phi"]])
+      ll_train <- fishMod::dTweedie(y = joined_dat_train$cpue_kg_km2, p = p, mu = exp(pred$est), phi = phi)
+    }
+    ll$train_dens_ll_train_mean <- mean(unlist(ll_train))
     return(ll)
   } else {
     return(
@@ -141,22 +155,37 @@ if (FALSE) {
 }
 
 df <- expand.grid(
+  # cutoff = 40,
+  # bin_width = 10,
   cutoff = round(exp(seq(log(12), log(175), length.out = 20))),
-  bin_width = seq(10, 150, by = 20),
-  species = c("sablefish", "arrowtooth", "lingcod", "widow rockfish")
+  bin_width = seq(10, 130, by = 40),
+  species = c("sablefish", "arrowtooth flounder", "lingcod", "dover sole", "petrale sole")
+  # create mesh
 )
+# out <- purrr::pmap(df, run_cv, parallel = T)
 nrow(df)
 cores <- 40
 nrow(df) * 560 / 60 / 60 / cores
+df
 
+unique(catch$common_name)
 set.seed(1234)
-plan(multicore, workers = 40L)
-out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
-out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
-plan(sequential)
+plan(multicore, workers = 50L)
+tictoc::tic()
+# out <- purrr::pmap(df[1:3, ], run_cv, parallel = T)
+out <- furrr::future_pmap(df[1:3, ], run_cv, parallel = FALSE)
+tictoc::toc()
+saveRDS(out, "output/02-binomial-blockCV-2025-03-31.rds")
 
-save(out, "output/02-binomial-blockCV-2025-03-28.rds")
-save(out2, "output/02-binomial-blockCV-pars-2025-03-28.rds")
+tictoc::tic()
+# out2 <- purrr::pmap(df[1:2, ], run_cv, do_full_fit = TRUE, parallel = T)
+out2 <- filter(df, bin_width == 10) |>
+  furrr::future_pmap(run_cv, do_full_fit = TRUE, parallel = FALSE)
+tictoc::toc()
+plan(sequential)
+saveRDS(out2, "output/02-binomial-blockCV-pars-2025-03-28.rds")
+
+
 
 ## library(ggplot2)
 ## d <- readRDS("output/02_binomial_blockCV.rds")
