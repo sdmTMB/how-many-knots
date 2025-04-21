@@ -4,6 +4,7 @@ library(ggplot2)
 library(viridis)
 library(dplyr)
 library(scales)
+library(patchwork)
 theme_set(ggsidekick::theme_sleek() +
     theme(legend.position = "bottom"))
 
@@ -59,6 +60,36 @@ d <- d |>
 #   stripwidth_scale +
 #   geom_point(data = d_random, aes(cutoff, range), col = "black", alpha = 0.5)
 # ggsave2("figures/groundfish_range_v_cutoff", height = 6, width = 8)
+
+sub <- dplyr::filter(d, species %in% c("Sablefish", "Widow rockfish", "Lingcod", "Arrowtooth flounder"),
+                     bin_width == 50)
+sub$species <- as.factor(as.character(sub$species))
+
+p1 <- sub |>
+  ggplot(aes(n, range, group = bin_width, col = bin_width)) +
+  geom_line() +
+  facet_wrap(~species, scale = "free_y", ncol = 1) +
+  xlab("Mesh vertices (n)") +
+  ylab("Estimated spatial range (km)") +
+  stripwidth_scale +
+  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) + 
+  theme(legend.position = "none")
+
+p2 <- sub |>
+  ggplot(aes(n, present_dens_ll, group = bin_width, col = bin_width)) +
+  geom_line() +
+  facet_wrap(~species, scale = "free_y", ncol = 1) +
+  xlab("Mesh vertices (n)") +
+  ylab("Predicted log likelihood") +
+  stripwidth_scale +
+  theme(legend.position = "none")
+# Remove xlab from p1?
+p1_clean <- p1 + xlab(NULL)
+# Bind the range and LL figs in columns
+(p1_clean | p2_clean) +
+  plot_layout(ncol = 2, widths = c(1, 1), guides = "collect") &
+  xlab("Mesh vertices (n)")
+ggsave2("figures/groundfish_range_and_ll_v_n", height = 6, width = 8)
 
 d |>
   ggplot(aes(n, range, group = bin_width, col = bin_width)) +
