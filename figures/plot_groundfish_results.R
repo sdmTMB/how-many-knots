@@ -69,7 +69,7 @@ p1 <- sub |>
   ggplot(aes(n, range, group = bin_width, col = bin_width)) +
   geom_line() +
   facet_wrap(~species, scale = "free_y", ncol = 1) +
-  xlab("Mesh vertices (n)") +
+  xlab(NULL) +
   ylab("Estimated spatial range (km)") +
   stripwidth_scale +
   scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) + 
@@ -79,16 +79,17 @@ p2 <- sub |>
   ggplot(aes(n, present_dens_ll, group = bin_width, col = bin_width)) +
   geom_line() +
   facet_wrap(~species, scale = "free_y", ncol = 1) +
-  xlab("Mesh vertices (n)") +
+  xlab(NULL) +
   ylab("Predicted log likelihood") +
   stripwidth_scale +
   theme(legend.position = "none")
-# Remove xlab from p1?
-p1_clean <- p1 + xlab(NULL)
+
 # Bind the range and LL figs in columns
-(p1_clean | p2_clean) +
-  plot_layout(ncol = 2, widths = c(1, 1), guides = "collect") &
-  xlab("Mesh vertices (n)")
+shared_x <- wrap_elements(
+  grid::textGrob("Mesh vertices (n)", gp = gpar(fontsize = 10))
+)
+((p1 | p2) / shared_x) +
+  plot_layout(heights = c(1, 0.05))
 ggsave2("figures/groundfish_range_and_ll_v_n", height = 6, width = 8)
 
 d |>
