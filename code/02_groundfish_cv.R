@@ -185,7 +185,7 @@ df <- expand.grid(
   # bin_width = seq(10, 130, by = 40),
   bin_width = NA,
   seed = seq(2, 4),
-  species = c("sablefish") #, "arrowtooth flounder", "lingcod", "petrale sole")
+  species = c("sablefish", "lingcod") #, "arrowtooth flounder", "lingcod", "petrale sole")
   # species = c("arrowtooth flounder") #, "arrowtooth flounder", "lingcod", "petrale sole")
   # create mesh
 )
@@ -197,6 +197,7 @@ tictoc::tic()
 out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
 tictoc::toc()
 plan(sequential)
+saveRDS(out, file = "output/gf-cv-out.rds")
 
 out_df <- bind_rows(out)
 
