@@ -153,72 +153,112 @@ run_cv <- function(cutoff, bin_width, species, seed = NULL, do_full_fit = FALSE,
   }
 }
 
-if (FALSE) {
-  df <- expand.grid(
-    cutoff = 40,
-    bin_width = 40,
-    species = "sablefish"
-  )
-  tictoc::tic()
-  plan(multisession)
-  out <- purrr::pmap(df[1, ], run_cv, parallel = TRUE)
-  tictoc::toc()
-  out2 <- purrr::pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+# if (FALSE) {
+#   df <- expand.grid(
+#     cutoff = 40,
+#     bin_width = 40,
+#     species = "sablefish"
+#   )
+#   tictoc::tic()
+#   plan(multisession)
+#   out <- purrr::pmap(df[1, ], run_cv, parallel = TRUE)
+#   tictoc::toc()
+#   out2 <- purrr::pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+#
+#   df <- expand.grid(
+#     cutoff = 40,
+#     bin_width = NA,
+#     seed = 1,
+#     species = "sablefish"
+#   )
+#   tictoc::tic()
+#   plan(multisession)
+#   out <- purrr::pmap(df[1, ], run_cv, parallel = TRUE)
+#   tictoc::toc()
+#   out2 <- purrr::pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+# }
 
-  df <- expand.grid(
-    cutoff = 40,
-    bin_width = NA,
-    seed = 1,
-    species = "sablefish"
-  )
-  tictoc::tic()
-  plan(multisession)
-  out <- purrr::pmap(df[1, ], run_cv, parallel = TRUE)
-  tictoc::toc()
-  out2 <- purrr::pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+# random k-fold: -----------------------------------------------------------------
+df <- expand.grid(
+  cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+  bin_width = NA,
+  seed = c(281, 92110, 27293, 8282, 812938),
+  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+)
+nrow(df)
+plan(multicore, workers = 80L)
+out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
+plan(sequential)
+saveRDS(out, file = "output/gf-cv-random-out.rds")
+
+# strip width blocked CV: ---------------------------------------------------------
+df <- expand.grid(
+  cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+  bin_width = seq(10, 130, by = 40),
+  seed = 123,
+  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+)
+nrow(df)
+plan(multicore, workers = 80L)
+out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
+saveRDS(out, file = "output/gf-cv-blocked-out.rds")
+out2 <- furrr::future_pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+saveRDS(out2, file = "output/gf-cv-full-fit.rds")
+plan(sequential)
+
+
+if (FALSE) {
+  out <- readRDS("output/gf-cv-out.rds")
+  out_df <- bind_rows(out)
+
+  out2 <- readRDS("output/gf-cv-out-arrowtooth.rds")
+  out_df <- bind_rows(out_df, bind_rows(out2))
+
+  out2 <- readRDS("output/gf-cv-out-petrale.rds")
+  out_df <- bind_rows(out_df, bind_rows(out2))
+
+  make_panel <- function(dat) {
+    if (dat$species[[1]] == "lingcod") {
+      dat <- filter(dat, test_dens_ll_sum > -100000)
+    }
+
+    dat |>
+      select(n, converged, cutoff, species, test_dens_ll_sum, train_dens_ll_sum) |>
+      tidyr::pivot_longer(cols = c(test_dens_ll_sum, train_dens_ll_sum), names_to = "ll_type") |>
+      filter(n > 80, converged) |>
+      mutate(ll_type = ifelse(grepl("test", ll_type), "Out of sample", "In sample")) |>
+      group_by(n, cutoff, ll_type, species) |>
+      # summarize(est = mean(exp(test_dens_ll_mean)), lwr = min(mean(exp(test_dens_ll_mean))), upr = max(exp(test_dens_ll_mean))) |>
+      summarize(est = mean(value), lwr = min(value), upr = max(value)) |>
+      group_by(ll_type, species) |>
+      mutate(
+        lwr = lwr - max(est),
+        upr = upr - max(est),
+        est = est - max(est)
+      ) |>
+      ggplot(aes(n, est, colour = cutoff)) +
+      scale_colour_viridis(direction = -1, end = 0.9, limits = c(min(out_df$cutoff), max(out_df$cutoff))) +
+      geom_line() +
+      facet_wrap(~ll_type, scales = "free_y", ncol = 2) +
+      # geom_point(aes(size = cutoff), pch = 21) +
+      geom_point(pch = 21) +
+      geom_linerange(aes(ymin = lwr, ymax = upr)) +
+      geom_smooth(se = FALSE, method = "gam", colour = "grey50") +
+      ylab("Relative log likelihood") +
+      xlab("Mesh vertices") +
+      ggsidekick::theme_sleek() +
+      labs(colour = "Cutoff") +
+      ggtitle(stringr::str_to_title(dat$species[1]))
+  }
+
+  d2 <- filter(out_df, species != "lingcod")
+  d2$species <- as.character(d2$species)
+  g <- lapply(split(d2, d2$species), make_panel)
+  patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
+
+  1
 }
 
-df <- expand.grid(
-  # cutoff = 40,
-  # bin_width = 10,
-  cutoff = round(exp(seq(log(14), log(175), length.out = 25))),
-  # bin_width = seq(10, 130, by = 40),
-  bin_width = NA,
-  seed = seq(2, 4),
-  species = c("sablefish", "lingcod") #, "arrowtooth flounder", "lingcod", "petrale sole")
-  # species = c("arrowtooth flounder") #, "arrowtooth flounder", "lingcod", "petrale sole")
-  # create mesh
-)
-# plot(df$cutoff)
-nrow(df)
-plan(multicore, workers = 60L)
-tictoc::tic()
-# out <- purrr::pmap(df, run_cv, parallel = TRUE)
-out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
-tictoc::toc()
-plan(sequential)
-saveRDS(out, file = "output/gf-cv-out.rds")
-
-out_df <- bind_rows(out)
-
-head(out_df)
-out_df |> 
-  group_by(n, cutoff) |>
-  summarize(mean = mean(test_dens_ll_sum)) |> 
-  ggplot(aes(n, mean)) + 
-  geom_line() +
-  geom_point(aes(size = cutoff)) +
-  geom_smooth(se = FALSE)
-
-out_df |> 
-  group_by(n, cutoff) |>
-  summarize(mean = mean(train_dens_ll_sum)) |> 
-  ggplot(aes(n, mean)) + 
-  geom_line() +
-  geom_point(aes(size = cutoff)) +
-  geom_smooth(se = FALSE)
-
-1
 ##############
 
 #
@@ -279,34 +319,34 @@ out_df |>
 # names(out)
 #
 # library(ggplot2)
-# out |> 
-#   filter(present_dens_ll > -1000) |>  
-#   filter(bin_width < 100) |>  
-#   ggplot(aes(n, present_dens_ll)) + 
+# out |>
+#   filter(present_dens_ll > -1000) |>
+#   filter(bin_width < 100) |>
+#   ggplot(aes(n, present_dens_ll)) +
 #   geom_line() +
 #   facet_grid(species~bin_width, scales = "free_y") +
 #   geom_smooth(se = FALSE)
 #
 # unique(out2$species)
 # tidyr::pivot_longer(out2, cols = estimate) |>
-#   filter(value < 1000) |> 
+#   filter(value < 1000) |>
 #   ggplot(aes(n, value)) + geom_line() +
 #   facet_grid(term~species, scales = "free")
 #
 # unique(out2$species)
 # tidyr::pivot_longer(out2, cols = loglik) |>
-#   # filter(value < 1000) |> 
+#   # filter(value < 1000) |>
 #   ggplot(aes(n, value)) + geom_line() +
 #   facet_wrap(~species, scales = "free")
 #
 # unique(out2$species)
 # tidyr::pivot_longer(out2, cols = cAIC) |>
-#   # filter(value < 1000) |> 
+#   # filter(value < 1000) |>
 #   ggplot(aes(n, value)) + geom_line() +
 #   facet_wrap(~species, scales = "free")
 #
 # tidyr::pivot_longer(out2, cols = edf_omega) |>
-#   # filter(value < 1000) |> 
+#   # filter(value < 1000) |>
 #   ggplot(aes(n, value)) + geom_line() +
 #   facet_wrap(~species, scales = "free") +
 #   geom_abline(intercept = 0, slope = 1, lty = 2)
