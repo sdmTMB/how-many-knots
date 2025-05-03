@@ -202,7 +202,16 @@ nrow(df)
 plan(multicore, workers = 80L)
 out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
 saveRDS(out, file = "output/gf-cv-blocked-out.rds")
-out2 <- furrr::future_pmap(df[1, ], run_cv, do_full_fit = TRUE, parallel = FALSE)
+plan(sequential)
+
+plan(multicore, workers = 80L)
+df <- expand.grid(
+  cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+  bin_width = 10,
+  seed = 123,
+  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+)
+out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
 saveRDS(out2, file = "output/gf-cv-full-fit.rds")
 plan(sequential)
 
