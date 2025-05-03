@@ -196,7 +196,7 @@ df <- expand.grid(
   cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
   bin_width = seq(10, 130, by = 40),
   seed = 123,
-  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+  species = c("sablefish", "arrowtooth flounder", "petrale sole")
 )
 nrow(df)
 plan(multicore, workers = 80L)
@@ -217,14 +217,9 @@ plan(sequential)
 
 
 if (FALSE) {
-  out <- readRDS("output/gf-cv-out.rds")
-  out_df <- bind_rows(out)
-
-  out2 <- readRDS("output/gf-cv-out-arrowtooth.rds")
-  out_df <- bind_rows(out_df, bind_rows(out2))
-
-  out2 <- readRDS("output/gf-cv-out-petrale.rds")
-  out_df <- bind_rows(out_df, bind_rows(out2))
+  library(ggplot2)
+  out <- readRDS("output/gf-cv-random-out.rds")
+  out_df <- bind_rows(out) |> filter(species != "yelloweye rockfish")
 
   make_panel <- function(dat) {
     if (dat$species[[1]] == "lingcod") {
@@ -232,12 +227,15 @@ if (FALSE) {
     }
 
     dat |>
-      select(n, converged, cutoff, species, test_dens_ll_sum, train_dens_ll_sum) |>
+      select(n, converged, cutoff, species, seed, test_dens_ll_sum, train_dens_ll_sum) |>
       tidyr::pivot_longer(cols = c(test_dens_ll_sum, train_dens_ll_sum), names_to = "ll_type") |>
       filter(n > 80, converged) |>
       mutate(ll_type = ifelse(grepl("test", ll_type), "Out of sample", "In sample")) |>
+      group_by(ll_type, species, seed) |>
+      # mutate(
+      #   value = value - value[n()]
+      # ) |>
       group_by(n, cutoff, ll_type, species) |>
-      # summarize(est = mean(exp(test_dens_ll_mean)), lwr = min(mean(exp(test_dens_ll_mean))), upr = max(exp(test_dens_ll_mean))) |>
       summarize(est = mean(value), lwr = min(value), upr = max(value)) |>
       group_by(ll_type, species) |>
       mutate(
@@ -257,13 +255,24 @@ if (FALSE) {
       xlab("Mesh vertices") +
       ggsidekick::theme_sleek() +
       labs(colour = "Cutoff") +
-      ggtitle(stringr::str_to_title(dat$species[1]))
+      ggtitle(stringr::str_to_title(dat$species[1])) +
+      geom_hline(yintercept = 0, lty = 2, col = "grey50")
   }
 
   d2 <- filter(out_df, species != "lingcod")
   d2$species <- as.character(d2$species)
   g <- lapply(split(d2, d2$species), make_panel)
   patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
+
+  d <- readRDS("output/gf-cv-blocked-out.rds")
+  d <- bind_rows(d)
+  d |>
+    # filter(test_dens_ll > -1000) |>
+    # filter(bin_width < 100) |>
+    ggplot(aes(n, test_dens_ll_sum, colour = factor(bin_width))) +
+    geom_line() +
+    facet_wrap(~species, scales = "free_y") +
+    geom_smooth(se = FALSE)
 
   1
 }
