@@ -28,7 +28,7 @@ df <- expand.grid(
 
 set.seed(2021)
 
-for (i in 44:nrow(df)) {
+for (i in 1:nrow(df)) {
   
   catch_sub <- dplyr::filter(catch, common_name == df$species[i])
   
@@ -115,3 +115,4 @@ for (i in 44:nrow(df)) {
   saveRDS(all_indices, "output/04_index_estimates.rds")
   print(i)
 }
+saveRDS(df, "output_index_df.rds")
