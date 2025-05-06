@@ -9,6 +9,13 @@ library(fmesher)
 library(blockCV)
 library(future)
 
+theme_set(ggsidekick::theme_sleek() +
+            theme(legend.position = "bottom"))
+
+ggsave2 <- function(filename, ...) {
+  ggsave(paste0(filename, ".png"), ...)
+  ggsave(paste0(filename, ".pdf"), ...)
+}
 plan(multisession)
 
 set.seed(2021)
@@ -50,7 +57,7 @@ boundary <- inla.nonconvex.hull(coordinates(haul),
   convex = -0.05
 )
 
-for (i in 1:nrow(df)) {
+for (i in nrow(df):1) {
   print(i)
   
   # Create mesh
@@ -160,3 +167,24 @@ for (i in 1:nrow(df)) {
   # Save progress
   saveRDS(df, "output/01_loocv_temp.rds")
 }
+
+df <- readRDS("output/01_loocv_temp.rds") |>
+  dplyr::filter(ll_test != 0, ll_train != 0) |>
+  dplyr::filter(n != 341, n < 500) # problematic convergence
+  
+df_train <- dplyr::select(df, n, ll_train) |>
+  dplyr::rename(ll = ll_train) |>
+  dplyr::mutate(type = "Train")
+# each dataset is used 9 times for training
+df_train$ll <- df_train$ll / 9 
+
+df_test <- dplyr::select(df, n, ll_test) |>
+  dplyr::rename(ll = ll_test) |>
+  dplyr::mutate(type = "Test")
+
+# divide n by 10, because it's accumulated for each fold above and we want average across folds
+ggplot(rbind(df_train, df_test), aes(n, ll, col = type)) + 
+  geom_point() + 
+  xlab("Mesh vertices") + 
+  ylab("Log-likelihood")
+ggsave2("figures/mgcv_temperature", height = 3, width = 6)
