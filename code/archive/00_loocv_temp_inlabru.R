@@ -187,4 +187,4 @@ ggplot(rbind(df_train, df_test), aes(n, ll, col = type)) +
   geom_point() + 
   xlab("Mesh vertices") + 
   ylab("Log-likelihood")
-ggsave2("figures/mgcv_temperature", height = 3, width = 6)
+ggsave2("figures/inlabru_temperature", height = 3, width = 6)
