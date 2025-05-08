@@ -264,6 +264,33 @@ if (FALSE) {
   g <- lapply(split(d2, d2$species), make_panel)
   patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
 
+  theta <- readRDS("output/gf-cv-full-fit.rds")
+  theta <- bind_rows(theta) |> filter(species != "yelloweye rockfish") |>
+    filter(!isFALSE(converged))
+
+  theta |>
+    tidyr::pivot_longer(cols = estimate) |>
+    filter(value < 1000) |>
+    ggplot(aes(n, value)) + geom_line() +
+    facet_grid(term~species, scales = "free")
+
+  est <- theta |> tidyr::pivot_longer(cols = estimate, values_to = "est")
+  lwr <- theta |> tidyr::pivot_longer(cols = conf.low, values_to = "lwr")
+  upr <- theta |> tidyr::pivot_longer(cols = conf.high, values_to = "upr")
+  est <- dplyr::bind_cols(est, select(lwr, lwr))
+  est <- dplyr::bind_cols(est, select(upr, upr))
+
+  est |>
+    filter(sanity) |>
+    # filter(upr < 1000) |>
+    filter(cutoff < 80) |>
+    filter(term %in% c("phi", "sigma_O", "range_a", "range_b")) |>
+      # filter(term %in% c("range_a")) |>
+    ggplot(aes(n, est)) +
+    geom_ribbon(aes(ymin = lwr, ymax = upr)) +
+    geom_line() +
+    facet_grid(term~species, scales = "free")
+
   d <- readRDS("output/gf-cv-blocked-out.rds")
   d <- bind_rows(d)
   d |>
@@ -271,7 +298,7 @@ if (FALSE) {
     # filter(bin_width < 100) |>
     ggplot(aes(n, test_dens_ll_sum, colour = factor(bin_width))) +
     geom_line() +
-    facet_wrap(~species, scales = "free_y") +
+    facet_grid(species~bin_width, scales = "free_y") +
     geom_smooth(se = FALSE)
 
   1
