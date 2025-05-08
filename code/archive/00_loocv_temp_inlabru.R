@@ -8,6 +8,7 @@ library(fmesher)
 # https://www.maths.ed.ac.uk/~flindgre/2018/07/22/spatially-varying-mesh-quality/
 library(blockCV)
 library(future)
+library(ggplot2)
 
 theme_set(ggsidekick::theme_sleek() +
             theme(legend.position = "bottom"))
@@ -28,6 +29,8 @@ haul$yday <- lubridate::yday(haul$date_formatted)
 haul$zday <- scale(haul$yday)
 haul_new <- dplyr::filter(haul, year==2018,
                           !is.na(temperature_at_gear_c_der))
+haul_new$log_depth_scaled <- as.numeric(haul_new$log_depth_scaled)
+haul_new$log_depth_scaled2 <- as.numeric(haul_new$log_depth_scaled2)
 haul_new$fold_id <- rep(1:10, length.out = nrow(haul_new))
 haul_new$pred_train <- NA
 haul <- haul_new
@@ -79,7 +82,7 @@ for (i in nrow(df):1) {
     prior.range = c(20, 0.05)
   )
   
-  components <- temperature_at_gear_c_der ~ zday + I(zday^2) +
+  components <- temperature_at_gear_c_der ~ log_depth_scaled + I(log_depth_scaled^2) +
     field(main = coordinates, model = matern)
   
   # Set log-likelihood to 0, and fold failure flag to FALSE
