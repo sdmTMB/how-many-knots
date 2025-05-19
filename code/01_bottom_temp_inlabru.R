@@ -37,7 +37,7 @@ boundary <- INLA::inla.nonconvex.hull(sp::coordinates(haul),
   convex = -0.05
 )
 
-run_cv <- function(cutoff) {
+run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE) {
   df <- data.frame(cutoff = cutoff)
   mesh <- INLA::inla.mesh.2d(
     loc = sp::coordinates(haul),
@@ -57,115 +57,255 @@ run_cv <- function(cutoff) {
     prior.range = c(500, 0.05)
   )
 
-  components <- temperature_at_gear_c_der ~ log_depth_scaled + I(log_depth_scaled^2) +
-    field(main = coordinates, model = matern)
-
+  components <- temperature_at_gear_c_der ~ log_depth_scaled + log_depth_scaled2 + Intercept(1) +
+    field(main = geometry, model = matern)
 
   df$ll_test <- 0
   df$ll_train <- 0
+  df$ll_test_sdmTMB <- 0
+  df$ll_train_sdmTMB <- 0
+  df$ll_test_sdmTMB_noprior <- 0
+  df$ll_train_sdmTMB_noprior <- 0
 
-  for (ii in 1:10) {
+  for (ii in folds) {
     print(ii)
-    fit_train <- tryCatch(
-      {
-        bru(
-          components,
-          data = haul[haul$fold_id != ii, , drop = FALSE],
-          family = "gaussian"
-        )
-      },
-      error = function(e) {
-        message("    -> bru() failed: ", e$message)
-        return(NULL)
+    if (run_inla) {
+      fit_train <- tryCatch(
+        {
+          bru(
+            components,
+            data = haul[haul$fold_id != ii, , drop = FALSE],
+            family = "gaussian"
+          )
+        },
+        error = function(e) {
+          message("    -> bru() failed: ", e$message)
+          return(NULL)
+        }
+      )
+      # summary(fit_train)
+      if (is.null(fit_train)) {
+        fold_failed <- TRUE
+        break
       }
-    )
+    }
 
-    if (is.null(fit_train)) {
-      fold_failed <- TRUE
+    this_dat <- haul[haul$fold_id != ii, , drop = FALSE]
+    co <- sp::coordinates(this_dat)
+    this_dat <- as.data.frame(this_dat)
+    this_dat$X <- co[, 1]
+    this_dat$Y <- co[, 2]
+    this_mesh <- make_mesh(this_dat, c("X", "Y"), mesh = mesh)
+    fit_train_sdmTMB <- tryCatch(sdmTMB(
+      temperature_at_gear_c_der ~ log_depth_scaled + I(log_depth_scaled^2),
+      data = this_dat,
+      mesh = this_mesh,
+      priors = sdmTMBpriors(pc_matern(range_gt = 500, sigma_lt = 10))
+    ), error = function(e) {
+      return(NULL)
+    })
+
+    fit_train_sdmTMB_noprior <- tryCatch(sdmTMB(
+      temperature_at_gear_c_der ~ log_depth_scaled + I(log_depth_scaled^2),
+      data = this_dat,
+      mesh = this_mesh,
+    ), error = function(e) {
+      return(NULL)
+    })
+
+    if (is.null(fit_train_sdmTMB_noprior)) {
       break
     }
 
-    pred_train <- tryCatch(
-      {
-        predict(fit_train,
-          newdata = haul[haul$fold_id != ii, , drop = FALSE],
-          ~ log_depth_scaled + I(log_depth_scaled^2) + field
-        )
-      },
-      error = function(e) {
-        message("    -> pred_train failed: ", e$message)
-        return(NULL)
-      }
-    )
-
-    pred_test <- tryCatch(
-      {
-        predict(fit_train,
-          newdata = haul[haul$fold_id == ii, , drop = FALSE],
-          ~ log_depth_scaled + I(log_depth_scaled^2) + field
-        )
-      },
-      error = function(e) {
-        message("    -> pred_test failed: ", e$message)
-        return(NULL)
-      }
-    )
-
-    tau <- tryCatch(
-      {
-        fit_train$summary.hyperpar$mean[1]
-      },
-      error = function(e) {
-        message("    -> failed to extract tau: ", e$message)
-        return(NA)
-      }
-    )
-
-    # If any part failed, mark the fold as failed
-    if (is.null(pred_train) || is.null(pred_test) || is.na(tau)) {
-      fold_failed <- TRUE
-      break
+    if (run_inla) {
+      pred_train <- tryCatch(
+        {
+          predict(fit_train,
+            newdata = haul[haul$fold_id != ii, , drop = FALSE],
+            ~ log_depth_scaled + log_depth_scaled2 + field + Intercept
+          )
+        },
+        error = function(e) {
+          message("    -> pred_train failed: ", e$message)
+          return(NULL)
+        }
+      )
     }
 
-    # Otherwise accumulate log-likelihoods
-    df$ll_train <- df$ll_train +
+    pred_train_sdmTMB <- predict(fit_train_sdmTMB, newdata = NULL)
+    pred_train_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = NULL)
+
+    if (run_inla) {
+      pred_test <- tryCatch(
+        {
+          predict(fit_train,
+            newdata = haul[haul$fold_id == ii, , drop = FALSE],
+            ~ log_depth_scaled + log_depth_scaled2 + field + Intercept
+          )
+        },
+        error = function(e) {
+          message("    -> pred_test failed: ", e$message)
+          return(NULL)
+        }
+      )
+    }
+
+    nd <- haul[haul$fold_id == ii, , drop = FALSE]
+    co <- sp::coordinates(nd)
+    nd <- as.data.frame(nd)
+    nd$X <- co[, 1]
+    nd$Y <- co[, 2]
+    pred_test_sdmTMB <- predict(fit_train_sdmTMB, newdata = nd)
+    pred_test_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = nd)
+
+    if (FALSE) {
+      plot(pred_test_sdmTMB$est, pred_test$mean)
+      abline(0, 1)
+      plot(pred_train_sdmTMB$est, pred_train$mean)
+      abline(0, 1)
+    }
+
+    if (run_inla) {
+      tau <- tryCatch(
+        {
+          fit_train$summary.hyperpar$mean[1]
+        },
+        error = function(e) {
+          message("    -> failed to extract tau: ", e$message)
+          return(NA)
+        }
+      )
+    }
+
+    phi <- exp(get_pars(fit_train_sdmTMB)$ln_phi)
+    phi_noprior <- exp(get_pars(fit_train_sdmTMB_noprior)$ln_phi)
+
+    if (run_inla) {
+      # If any part failed, mark the fold as failed
+      if (is.null(pred_train) || is.null(pred_test) || is.na(tau)) {
+        fold_failed <- TRUE
+        break
+      }
+
+      # Otherwise accumulate log-likelihoods
+      df$ll_train <- df$ll_train +
+        sum(dnorm(
+          haul$temperature_at_gear_c_der[haul$fold_id != ii],
+          mean = pred_train$mean,
+          sd = sqrt(1 / tau),
+          log = TRUE
+        ))
+
+      df$ll_test <- df$ll_test +
+        sum(dnorm(
+          haul$temperature_at_gear_c_der[haul$fold_id == ii],
+          mean = pred_test$mean,
+          sd = sqrt(1 / tau),
+          log = TRUE
+        ))
+    }
+
+    df$ll_train_sdmTMB <- df$ll_train_sdmTMB +
       sum(dnorm(
-        haul$temperature_at_gear_c_der[haul$fold_id != ii],
-        mean = pred_train$mean,
-        sd = sqrt(1 / tau),
+        this_dat$temperature_at_gear_c_der,
+        mean = pred_train_sdmTMB$est,
+        sd = phi,
         log = TRUE
       ))
 
-    df$ll_test <- df$ll_test +
+    df$ll_test_sdmTMB <- df$ll_test_sdmTMB +
       sum(dnorm(
-        haul$temperature_at_gear_c_der[haul$fold_id == ii],
-        mean = pred_test$mean,
-        sd = sqrt(1 / tau),
+        nd$temperature_at_gear_c_der,
+        mean = pred_test_sdmTMB$est,
+        sd = phi,
+        log = TRUE
+      ))
+
+    df$ll_train_sdmTMB_noprior <- df$ll_train_sdmTMB_noprior +
+      sum(dnorm(
+        this_dat$temperature_at_gear_c_der,
+        mean = pred_train_sdmTMB_noprior$est,
+        sd = phi,
+        log = TRUE
+      ))
+
+    df$ll_test_sdmTMB_noprior <- df$ll_test_sdmTMB_noprior +
+      sum(dnorm(
+        nd$temperature_at_gear_c_der,
+        mean = pred_test_sdmTMB_noprior$est,
+        sd = phi,
         log = TRUE
       ))
   }
-  df$tau <- tau
+
+  if (run_inla) {
+    df$tau <- tau
+  }
+  df$phi <- phi
+  df$phi_noprior <- phi_noprior
   df
 }
 
-# out <- run_cv(cutoff = 25)
+# out <- run_cv(cutoff = 100, folds = 1:2)
 
-torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 24)))
+# torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
+torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
 nrow(torun)
 torun$cutoff
 
-plan(multisession, workers = 8)
+plan(multisession, workers = 10)
 out <- furrr::future_pmap(torun, run_cv)
 plan(sequential)
 
-out <- out |> dplyr::bind_rows()
+out2 <- out |> dplyr::bind_rows()
+head(out2)
 
-out |>
-  ggplot(aes(n, ll_test)) +
+out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test, ll_train), cols = ll_test:ll_train)
+
+g1 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test_sdmTMB, ll_train_sdmTMB), cols = ll_test_sdmTMB:ll_train_sdmTMB) |>
+  filter(!(name == "ll_test_sdmTMB" & value < -500)) |>
+  filter(!(name == "ll_train_sdmTMB" & value < -4000)) |>
+  filter(value != 0) |>
+  filter(value < -250) |>
+  ggplot(aes(n, value, colour = name)) +
+  facet_wrap(~name, scales = "free_y") +
   geom_point() +
   xlab("Mesh vertices") +
-  ylab("EDF") +
+  ggtitle("sdmTMB: Temperature example")
+
+g3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test_sdmTMB_noprior, ll_train_sdmTMB_noprior), cols = ll_test_sdmTMB_noprior:ll_train_sdmTMB_noprior) |>
+  filter(!(name == "ll_test_sdmTMB_noprior" & value < -500)) |>
+  filter(!(name == "ll_train_sdmTMB" & value < -4000)) |>
+  filter(value != 0) |>
+  filter(value < -250) |>
+  ggplot(aes(n, value, colour = name)) +
+  facet_wrap(~name, scales = "free_y") +
+  geom_point() +
+  xlab("Mesh vertices") +
+  ggtitle("sdmTMB no PC prior: Temperature example")
+
+g2 <- out3 |>
+  filter(value != 0) |>
+  filter(value < -250) |>
+  filter(value > -4000) |>
+  filter(!(name == "ll_test" & value < -500)) |>
+  # filter(!(name == "ll_test" & value != 0)) |>
+  # filter(!(name == "ll_test" & value < -800)) |>
+  ggplot(aes(n, value, colour = name)) +
+  facet_wrap(~name, scales = "free_y") +
+  geom_point() +
+  xlab("Mesh vertices") +
+  ggtitle("inlabru: Temperature example")
+library(patchwork)
+theme_set(theme_light())
+g1 / g3/ g2
+
+out2 |>
+  ggplot(aes(n, ll_train)) +
+  geom_point() +
+  xlab("Mesh vertices") +
   ggtitle("Temperature example")
+
 # dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
 #   ggplot(aes(n, rmse_train)) + geom_point()
 # dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
