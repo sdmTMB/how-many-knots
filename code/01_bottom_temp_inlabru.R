@@ -122,18 +122,32 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
       break
     }
 
+
     if (run_mgcv) {
+      mgcv_k <- round(df$n / 3)
+      if (mgcv_k > 350) run_mgcv <- FALSE
+      df$mgcv_k <- mgcv_k
       fit_train_mgcv <- tryCatch(mgcv::gam(
-        temperature_at_gear_c_der ~ zday + I(zday^2) + s(X, Y, k = df$n),
+        temperature_at_gear_c_der ~ zday + I(zday^2) + s(X, Y, k = mgcv_k),
+        # temperature_at_gear_c_der ~ zday + I(zday^2) + s(X, Y),
         data = this_dat,
         mesh = this_mesh,
       ), error = function(e) {
         return(NULL)
       })
       if (is.null(fit_train_mgcv)) {
-        break
+        run_mgcv <- FALSE # failed!
       }
     }
+
+    if (run_mgcv) {
+      df$mgcv_edf <- summary(fit_train_mgcv)$s.table[, "edf"]
+    }
+
+    df$sdmTMB_edf <- cAIC(fit_train_sdmTMB, "EDF")[[1]]
+    df$sdmTMB_edf_noprior <- cAIC(fit_train_sdmTMB_noprior, "EDF")[[1]]
+    df$sdmTMB_cAIC <- cAIC(fit_train_sdmTMB, "cAIC")[[1]]
+    df$sdmTMB_cAIC_noprior <- cAIC(fit_train_sdmTMB_noprior, "cAIC")[[1]]
 
     if (run_inla) {
       pred_train <- tryCatch(
@@ -300,20 +314,20 @@ plan(multisession, workers = 10)
 out <- furrr::future_pmap(torun, run_cv)
 plan(sequential)
 
-saveRDS(out, file = "output/01_loocv_temp_inlabru.rds")
+saveRDS(out, file = "output/01_loocv_temp_inlabru_mgcv.rds")
 
-out <- readRDS("output/01_loocv_temp_inlabru.rds")
+out <- readRDS("output/01_loocv_temp_inlabru_mgcv.rds")
 
 out2 <- out |> dplyr::bind_rows()
 head(out2)
 
-out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_sdmTMB_noprior), cols = ll_test:ll_train_sdmTMB_noprior)
+out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
 
 N <- nrow(haul)
 
-theme_set(ggsidekick::theme_sleek())
+# theme_set(ggsidekick::theme_sleek())
 theme_set(gfplot::theme_pbs())
-out3 |>
+x <- out3 |>
   mutate(test = grepl("test", name)) |>
   mutate(test_char = ifelse(test, "Test", "Train")) |>
   mutate(name = gsub("ll_test$", "ll_test_INLA", name)) |>
@@ -323,10 +337,22 @@ out3 |>
   filter(value != 0) |>
   filter(!(value > -300 & test)) |>
   filter(!(value > -2350 & !test)) |>
-  mutate(value = ifelse(test, value / N, value / (10 * N))) -> x
+  mutate(value = ifelse(test, value / N, value / (10 * N)))
 
+x |>
+  # filter(grepl("mgcv", model)) |>
+  # filter(test) |>
+  ggplot(aes(n, value, colour = model)) +
+  facet_grid(~test_char, scales = "free_y") +
+  geom_line() +
+  scale_colour_brewer(palette = "Set2") +
+  labs(colour = "Model", y = "Log density") +
+  xlab("Knots") +
+  coord_cartesian(ylim = c(-2, NA)) +
+  theme(legend.position = "top")
 
 g1 <- x |>
+  filter(!grepl("mgcv", model)) |>
   ggplot(aes(n, value, colour = model)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
@@ -336,6 +362,7 @@ g1 <- x |>
   theme(legend.position = "top")
 
 g2 <- x |>
+  filter(!grepl("mgcv", model)) |>
   ggplot(aes(cutoff, value, colour = model)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
