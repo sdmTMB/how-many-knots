@@ -7,8 +7,15 @@ library(dplyr)
 library(tidyr)
 plan(multisession)
 
+kappa <- sqrt(8) / range
+
+create_geoR_range <- function(range) {
+  range / sqrt(8)
+}
+create_geoR_range(0.1)
+
 set.seed(1)
-sim1 <- grf(2000, cov.pars = c(1, .05), cov.model = "matern", kappa = 1)
+sim1 <- grf(2000, cov.pars = c(1, create_geoR_range(0.2)), cov.model = "matern", kappa = 1)
 dat <- data.frame(x = sim1$coords[, 1], y = sim1$coords[, 2], z = sim1$data, obs = sim1$data + rnorm(2000, 0, 1))
 
 ggplot(dat, aes(x, y, colour = z)) +
@@ -19,7 +26,7 @@ ggplot(dat, aes(x, y, colour = obs)) +
   geom_point() +
   scale_colour_viridis_c()
 
-mesh <- make_mesh(dat, c("x", "y"), cutoff = 0.02)
+mesh <- make_mesh(dat, c("x", "y"), cutoff = 0.01)
 mesh$mesh$n
 plot(mesh)
 
@@ -28,12 +35,10 @@ summary(fit)
 sanity(fit)
 tidy(fit, "ran_pars")
 
-cutoffs <- c(0.005, seq(0.01, 0.09, 0.01))
+cutoffs <- seq(0.005, 0.15, length.out = 20)
 
 set.seed(1)
 dat$fold_id <- sample(1:10, nrow(dat), replace = TRUE)
-
-fit_cv$sum_loglik
 
 ret <- furrr::future_map_dfr(cutoffs, \(x) {
   print(x)
@@ -54,23 +59,27 @@ ret <- furrr::future_map_dfr(cutoffs, \(x) {
   phi <- grab_coef("phi")
   sigma_O <- grab_coef("sigma_O")
   range <- grab_coef("range")
+  rmse_true <- sqrt(mean((fit_cv$data$z - fit_cv$data$cv_predicted)^2))
   data.frame(
     leftout_loglik = fit_cv$sum_loglik,
     cutoff = x,
     n = mesh$mesh$n,
     phi = phi,
     sigma_O = sigma_O,
-    range = range
+    range = range,
+    rmse_true = rmse_true
   )
 })
 
 true <- data.frame(
   name = c("phi", "sigma_O", "range"),
-  value = c(1, 1, NA_real_)
+  value = c(1, 1, 0.2)
 )
 
 pivot_longer(ret, cols = -n) |>
   ggplot(aes(n, value)) +
   geom_point() +
+  geom_line() +
   facet_wrap(~name, scales = "free_y") +
-  geom_hline(data = true, mapping = aes(yintercept = value))
+  geom_hline(data = true, mapping = aes(yintercept = value)) +
+  ggsidekick::theme_sleek()
