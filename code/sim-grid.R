@@ -25,7 +25,8 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
 
   cutoffs <- exp(seq(log(0.005), log(0.15), length.out = 10))
 
-  ret <- purrr::map_dfr(cutoffs, \(x) {
+  ret <- tryCatch({
+    purrr::map_dfr(cutoffs, \(x) {
     mesh <- make_mesh(dat, c("x", "y"), cutoff = x)
     fit_cv <- sdmTMB_cv(
       obs ~ 1,
@@ -54,6 +55,17 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
       rmse_true = rmse_true
     )
   })
+  }, error = function(e) {
+    data.frame(
+      leftout_loglik = NA,
+      cutoff = NA,
+      mesh_n = NA,
+      phi_hat = NA,
+      sigma_O_hat = NA,
+      range_hat = NA,
+      rmse_true = NA
+    )
+    })
 
   ret$range <- .range
   ret$phi <- .phi
@@ -72,6 +84,7 @@ torun <- expand.grid(
   N = c(1000)
 )
 nrow(torun)
+plan(multicore)
 out <- furrr::future_pmap_dfr(torun, sim_and_fit)
 
 saveRDS(out, file = "output/sim-grid-output.rds")
