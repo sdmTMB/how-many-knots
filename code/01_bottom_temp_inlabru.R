@@ -71,6 +71,8 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
   df$ll_test_mgcv <- 0
   df$ll_train_mgcv <- 0
 
+  df$ss_sdmTMB <- df$ss_sdmTMB_noprior <- df$ss_mgcv <- df$ss_inla <- 0
+
   df$range_gt <- range_gt
   df$sigma_lt <- sigma_lt
 
@@ -268,6 +270,9 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
           sd = sqrt(1 / tau),
           log = TRUE
         ))
+
+      df$ss_inla <- df$ss_inla +
+        sum((haul$temperature_at_gear_c_der[haul$fold_id == ii] - pred_test$mean)^2)
     }
 
     if (!is.na(range_gt)) {
@@ -286,6 +291,9 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
           sd = phi,
           log = TRUE
         ))
+
+      df$ss_sdmTMB <- df$ss_sdmTMB +
+        sum((nd$temperature_at_gear_c_der - pred_test_sdmTMB$est)^2)
     }
 
     if (run_noprior) {
@@ -304,6 +312,10 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
           sd = phi_noprior,
           log = TRUE
         ))
+
+      df$ss_sdmTMB_noprior <- df$ss_sdmTMB_noprior +
+        sum((nd$temperature_at_gear_c_der - pred_test_sdmTMB_noprior$est)^2)
+      df$sigma_sdmTMB_noprior <- phi_noprior
     }
 
     if (run_mgcv) {
@@ -322,6 +334,9 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
           sd = phi_mgcv,
           log = TRUE
         ))
+
+      df$ss_mgcv <- df$ss_mgcv +
+        sum((nd$temperature_at_gear_c_der - pred_test_mgcv)^2)
     }
   } # end CV folds loop
 
@@ -330,8 +345,10 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
 
 out <- run_cv(cutoff = 100, folds = 1:2, run_noprior = FALSE, run_inla = FALSE, run_mgcv = FALSE)
 
+out <- run_cv(cutoff = 100, folds = 1:2)
+
 # torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
-torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 100)))
+torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 10)))
 nrow(torun)
 torun$cutoff
 
@@ -341,14 +358,15 @@ plan(sequential)
 saveRDS(out, file = "output/01_loocv_temp_inlabru_mgcv.rds")
 out <- readRDS("output/01_loocv_temp_inlabru_mgcv.rds")
 
-out2 <- out |> dplyr::bind_rows()
+out2 <- out |> bind_rows()
 head(out2)
-
-out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
 
 N <- nrow(haul)
 
 theme_set(ggsidekick::theme_sleek())
+
+out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
+
 x <- out3 |>
   mutate(test = grepl("test", name)) |>
   mutate(test_char = ifelse(test, "Test", "Train")) |>
@@ -362,15 +380,15 @@ x <- out3 |>
   mutate(value = ifelse(test, value / N, value / (10 * N))) |>
   filter(cutoff < 200)
 
-x |>
-  ggplot(aes(n, value, colour = model)) +
-  facet_grid(~test_char, scales = "free_y") +
-  geom_line() +
-  scale_colour_brewer(palette = "Set2") +
-  labs(colour = "Model", y = "Log density") +
-  xlab("Knots") +
-  coord_cartesian(ylim = c(-2, NA)) +
-  theme(legend.position = "top")
+# x |>
+#   ggplot(aes(n, value, colour = model)) +
+#   facet_grid(~test_char, scales = "free_y") +
+#   geom_line() +
+#   scale_colour_brewer(palette = "Set2") +
+#   labs(colour = "Model", y = "Log density") +
+#   xlab("Knots") +
+#   coord_cartesian(ylim = c(-2, NA)) +
+#   theme(legend.position = "top")
 
 mods <- c("sdmTMB", "sdmTMB noprior", "INLA", "mgcv")
 cols <- RColorBrewer::brewer.pal(4, "Set2")
@@ -412,6 +430,36 @@ g2 / g1 / g3 +
   theme(legend.position = "right")
 
 ggsave("figures/temperature-inla-sdmTMB-mgcv.pdf", width = 7.5, height = 7)
+
+# RMSE??
+g00 <- x |>
+  filter(!grepl("mgcv", model)) |>
+  filter(test) |>
+  mutate(value = value * N) |>
+  mutate(value = value - max(value)) |>
+  ggplot(aes(n, value, colour = model)) +
+  facet_wrap(~test_char, scales = "free_y") +
+  geom_line() +
+  scale_colour_manual(values = cols, drop = FALSE) +
+  labs(colour = "Model", y = "Relative log density") +
+  xlab("Mesh vertices") +
+  theme(legend.position = "top")
+
+g0 <- tidyr::pivot_longer(out2, cols = ss_inla:ss_sdmTMB) |>
+  mutate(rmse = sqrt(value / N)) |>
+  ggplot(aes(n, rmse, colour = name)) +
+  # scale_colour_manual(values = cols, drop = FALSE) +
+  xlab("Mesh vertices") +
+  labs(colour = "Model", y = "RMSE") +
+  geom_line()
+
+g4 <- out2 |>
+  ggplot(aes(n, sigma_sdmTMB_noprior)) +
+  xlab("Mesh vertices") +
+  ylab("Observation error SD (sdmTMB)") +
+  geom_line()
+
+g00 / g0 / g4 + plot_layout(axes = "collect") # , guides = "collect")
 
 out4 <- tidyr::pivot_longer(select(out2, cutoff, n, mgcv_edf:sdmTMB_cAIC_noprior), cols = mgcv_edf:sdmTMB_cAIC_noprior)
 
