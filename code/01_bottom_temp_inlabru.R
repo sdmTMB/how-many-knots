@@ -41,7 +41,7 @@ boundary <- INLA::inla.nonconvex.hull(sp::coordinates(haul),
   convex = -0.05
 )
 
-run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_lt = 10, run_mgcv = TRUE) {
+run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_lt = 10, run_mgcv = TRUE, run_noprior = TRUE) {
   df <- data.frame(cutoff = cutoff)
   mesh <- INLA::inla.mesh.2d(
     loc = sp::coordinates(haul),
@@ -54,15 +54,17 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
   )
   df$n <- mesh$n
 
-  # Create SPDE model with PC priors
-  matern <- INLA::inla.spde2.pcmatern(
-    mesh,
-    prior.sigma = c(sigma_lt, 0.05),
-    prior.range = c(range_gt, 0.05)
-  )
+  if (!is.na(range_gt)) {
+    # Create SPDE model with PC priors
+    matern <- INLA::inla.spde2.pcmatern(
+      mesh,
+      prior.sigma = c(sigma_lt, 0.05),
+      prior.range = c(range_gt, 0.05)
+    )
 
-  components <- temperature_at_gear_c_der ~ zday + zday2 + Intercept(1) +
-    field(main = geometry, model = matern)
+    components <- temperature_at_gear_c_der ~ zday + zday2 + Intercept(1) +
+      field(main = geometry, model = matern)
+  }
 
   df$ll_test <- 0
   df$ll_train <- 0
@@ -72,6 +74,9 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
   df$ll_train_sdmTMB_noprior <- 0
   df$ll_test_mgcv <- 0
   df$ll_train_mgcv <- 0
+
+  df$range_gt <- range_gt
+  df$sigma_lt <- sigma_lt
 
   for (ii in folds) {
     print(ii)
@@ -102,24 +107,31 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
     this_dat$X <- co[, 1]
     this_dat$Y <- co[, 2]
     this_mesh <- make_mesh(this_dat, c("X", "Y"), mesh = mesh)
-    fit_train_sdmTMB <- tryCatch(sdmTMB(
-      temperature_at_gear_c_der ~ zday + I(zday^2),
-      data = this_dat,
-      mesh = this_mesh,
-      priors = sdmTMBpriors(pc_matern(range_gt = range_gt, sigma_lt = sigma_lt))
-    ), error = function(e) {
-      return(NULL)
-    })
+    if (!is.na(range_gt)) {
+      fit_train_sdmTMB <- tryCatch(sdmTMB(
+        temperature_at_gear_c_der ~ zday + I(zday^2),
+        data = this_dat,
+        mesh = this_mesh,
+        priors = sdmTMBpriors(pc_matern(range_gt = range_gt, sigma_lt = sigma_lt))
+      ), error = function(e) {
+        return(NULL)
+      })
+      if (is.null(fit_train_sdmTMB)) {
+        break
+      }
+    }
 
-    fit_train_sdmTMB_noprior <- tryCatch(sdmTMB(
-      temperature_at_gear_c_der ~ zday + I(zday^2),
-      data = this_dat,
-      mesh = this_mesh,
-    ), error = function(e) {
-      return(NULL)
-    })
-    if (is.null(fit_train_sdmTMB_noprior)) {
-      break
+    if (run_noprior) {
+      fit_train_sdmTMB_noprior <- tryCatch(sdmTMB(
+        temperature_at_gear_c_der ~ zday + I(zday^2),
+        data = this_dat,
+        mesh = this_mesh,
+      ), error = function(e) {
+        return(NULL)
+      })
+      if (is.null(fit_train_sdmTMB_noprior)) {
+        break
+      }
     }
 
 
@@ -144,10 +156,14 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
       df$mgcv_edf <- summary(fit_train_mgcv)$s.table[, "edf"]
     }
 
-    df$sdmTMB_edf <- cAIC(fit_train_sdmTMB, "EDF")[[1]]
-    df$sdmTMB_edf_noprior <- cAIC(fit_train_sdmTMB_noprior, "EDF")[[1]]
-    df$sdmTMB_cAIC <- cAIC(fit_train_sdmTMB, "cAIC")[[1]]
-    df$sdmTMB_cAIC_noprior <- cAIC(fit_train_sdmTMB_noprior, "cAIC")[[1]]
+    if (!is.na(range_gt)) {
+      df$sdmTMB_edf <- cAIC(fit_train_sdmTMB, "EDF")[[1]]
+      df$sdmTMB_cAIC <- cAIC(fit_train_sdmTMB, "cAIC")[[1]]
+    }
+    if (run_noprior) {
+      df$sdmTMB_edf_noprior <- cAIC(fit_train_sdmTMB_noprior, "EDF")[[1]]
+      df$sdmTMB_cAIC_noprior <- cAIC(fit_train_sdmTMB_noprior, "cAIC")[[1]]
+    }
 
     if (run_inla) {
       pred_train <- tryCatch(
@@ -164,8 +180,12 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
       )
     }
 
-    pred_train_sdmTMB <- predict(fit_train_sdmTMB, newdata = NULL)
-    pred_train_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = NULL)
+    if (!is.na(range_gt)) {
+      pred_train_sdmTMB <- predict(fit_train_sdmTMB, newdata = NULL)
+    }
+    if (run_noprior) {
+      pred_train_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = NULL)
+    }
     if (run_mgcv) {
       pred_train_mgcv <- predict(fit_train_mgcv)
     }
@@ -190,8 +210,12 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
     nd <- as.data.frame(nd)
     nd$X <- co[, 1]
     nd$Y <- co[, 2]
-    pred_test_sdmTMB <- predict(fit_train_sdmTMB, newdata = nd)
-    pred_test_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = nd)
+    if (!is.na(range_gt)) {
+      pred_test_sdmTMB <- predict(fit_train_sdmTMB, newdata = nd)
+    }
+    if (run_noprior) {
+      pred_test_sdmTMB_noprior <- predict(fit_train_sdmTMB_noprior, newdata = nd)
+    }
 
     if (run_mgcv) {
       pred_test_mgcv <- predict(fit_train_mgcv, newdata = nd)
@@ -218,8 +242,12 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
       )
     }
 
-    phi <- exp(get_pars(fit_train_sdmTMB)$ln_phi)
-    phi_noprior <- exp(get_pars(fit_train_sdmTMB_noprior)$ln_phi)
+    if (!is.na(range_gt)) {
+      phi <- exp(get_pars(fit_train_sdmTMB)$ln_phi)
+    }
+    if (run_noprior) {
+      phi_noprior <- exp(get_pars(fit_train_sdmTMB_noprior)$ln_phi)
+    }
     if (run_mgcv) {
       phi_mgcv <- summary(fit_train_mgcv)$scale
     }
@@ -249,37 +277,41 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
         ))
     }
 
-    df$ll_train_sdmTMB <- df$ll_train_sdmTMB +
-      sum(dnorm(
-        this_dat$temperature_at_gear_c_der,
-        mean = pred_train_sdmTMB$est,
-        sd = phi,
-        log = TRUE
-      ))
+    if (!is.na(range_gt)) {
+      df$ll_train_sdmTMB <- df$ll_train_sdmTMB +
+        sum(dnorm(
+          this_dat$temperature_at_gear_c_der,
+          mean = pred_train_sdmTMB$est,
+          sd = phi,
+          log = TRUE
+        ))
 
-    df$ll_test_sdmTMB <- df$ll_test_sdmTMB +
-      sum(dnorm(
-        nd$temperature_at_gear_c_der,
-        mean = pred_test_sdmTMB$est,
-        sd = phi,
-        log = TRUE
-      ))
+      df$ll_test_sdmTMB <- df$ll_test_sdmTMB +
+        sum(dnorm(
+          nd$temperature_at_gear_c_der,
+          mean = pred_test_sdmTMB$est,
+          sd = phi,
+          log = TRUE
+        ))
+    }
 
-    df$ll_train_sdmTMB_noprior <- df$ll_train_sdmTMB_noprior +
-      sum(dnorm(
-        this_dat$temperature_at_gear_c_der,
-        mean = pred_train_sdmTMB_noprior$est,
-        sd = phi,
-        log = TRUE
-      ))
+    if (run_noprior) {
+      df$ll_train_sdmTMB_noprior <- df$ll_train_sdmTMB_noprior +
+        sum(dnorm(
+          this_dat$temperature_at_gear_c_der,
+          mean = pred_train_sdmTMB_noprior$est,
+          sd = phi_noprior,
+          log = TRUE
+        ))
 
-    df$ll_test_sdmTMB_noprior <- df$ll_test_sdmTMB_noprior +
-      sum(dnorm(
-        nd$temperature_at_gear_c_der,
-        mean = pred_test_sdmTMB_noprior$est,
-        sd = phi,
-        log = TRUE
-      ))
+      df$ll_test_sdmTMB_noprior <- df$ll_test_sdmTMB_noprior +
+        sum(dnorm(
+          nd$temperature_at_gear_c_der,
+          mean = pred_test_sdmTMB_noprior$est,
+          sd = phi_noprior,
+          log = TRUE
+        ))
+    }
 
     if (run_mgcv) {
       df$ll_train_mgcv <- df$ll_train_mgcv +
@@ -303,7 +335,7 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
   df
 }
 
-# out <- run_cv(cutoff = 100, folds = 1:2)
+out <- run_cv(cutoff = 100, folds = 1:2, run_noprior = FALSE, run_inla = FALSE, run_mgcv = FALSE)
 
 # torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
 torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
@@ -313,9 +345,7 @@ torun$cutoff
 plan(multisession, workers = 10)
 out <- furrr::future_pmap(torun, run_cv)
 plan(sequential)
-
 saveRDS(out, file = "output/01_loocv_temp_inlabru_mgcv.rds")
-
 out <- readRDS("output/01_loocv_temp_inlabru_mgcv.rds")
 
 out2 <- out |> dplyr::bind_rows()
@@ -325,8 +355,8 @@ out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols
 
 N <- nrow(haul)
 
-# theme_set(ggsidekick::theme_sleek())
-theme_set(gfplot::theme_pbs())
+theme_set(ggsidekick::theme_sleek())
+# theme_set(gfplot::theme_pbs())
 x <- out3 |>
   mutate(test = grepl("test", name)) |>
   mutate(test_char = ifelse(test, "Test", "Train")) |>
@@ -340,8 +370,6 @@ x <- out3 |>
   mutate(value = ifelse(test, value / N, value / (10 * N)))
 
 x |>
-  # filter(grepl("mgcv", model)) |>
-  # filter(test) |>
   ggplot(aes(n, value, colour = model)) +
   facet_grid(~test_char, scales = "free_y") +
   geom_line() +
@@ -351,12 +379,16 @@ x |>
   coord_cartesian(ylim = c(-2, NA)) +
   theme(legend.position = "top")
 
+mods <- c("sdmTMB", "sdmTMB noprior", "INLA", "mgcv")
+cols <- RColorBrewer::brewer.pal(4, "Set2")
+names(cols) <- mods
+
 g1 <- x |>
   filter(!grepl("mgcv", model)) |>
   ggplot(aes(n, value, colour = model)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
-  scale_colour_brewer(palette = "Set2") +
+  scale_colour_manual(values = cols, drop = FALSE) +
   labs(colour = "Model", y = "Log density") +
   xlab("Mesh vertices") +
   theme(legend.position = "top")
@@ -366,70 +398,125 @@ g2 <- x |>
   ggplot(aes(cutoff, value, colour = model)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
-  scale_colour_brewer(palette = "Set2") +
+  scale_colour_manual(values = cols, drop = FALSE) +
   labs(colour = "Model", y = "Log density") +
   xlab("Cutoff distance") +
   theme(legend.position = "top")
 
-g2 / g1 + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = "top")
+g3 <- x |>
+  filter(grepl("mgcv", model)) |>
+  ggplot(aes(n / 3, value, colour = model)) +
+  facet_wrap(~test_char, scales = "free_y") +
+  geom_line() +
+  scale_colour_manual(values = cols, drop = FALSE) +
+  scale_x_continuous(breaks = seq(0, 300, 50)) +
+  labs(colour = "Model", y = "Log density") +
+  xlab("Smoother basis dimension (k)") +
+  theme(legend.position = "top")
 
-ggsave("figures/temperature-inla-sdmTMB.pdf", width = 6.5, height = 6)
+g2 / g1 / g3 + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = "right")
 
-1
+ggsave("figures/temperature-inla-sdmTMB-mgcv.pdf", width = 7.5, height = 7)
 
-# g1 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test_sdmTMB, ll_train_sdmTMB), cols = ll_test_sdmTMB:ll_train_sdmTMB) |>
-#   filter(!(name == "ll_test_sdmTMB" & value < -500)) |>
-#   filter(!(name == "ll_train_sdmTMB" & value < -4000)) |>
-#   filter(value != 0) |>
-#   filter(value < -250) |>
-#   ggplot(aes(n, value, colour = name)) +
-#   facet_wrap(~name, scales = "free_y") +
-#   geom_point() +
-#   xlab("Mesh vertices") +
-#   ggtitle("sdmTMB: Temperature example")
-#
-# g3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test_sdmTMB_noprior, ll_train_sdmTMB_noprior), cols = ll_test_sdmTMB_noprior:ll_train_sdmTMB_noprior) |>
-#   filter(!(name == "ll_test_sdmTMB_noprior" & value < -500)) |>
-#   filter(!(name == "ll_train_sdmTMB" & value < -4000)) |>
-#   filter(value != 0) |>
-#   filter(value < -250) |>
-#   ggplot(aes(n, value, colour = name)) +
-#   facet_wrap(~name, scales = "free_y") +
-#   geom_point() +
-#   xlab("Mesh vertices") +
-#   ggtitle("sdmTMB no PC prior: Temperature example")
-#
-# g2 <- out3 |>
-#   filter(value != 0) |>
-#   filter(value < -250) |>
-#   filter(value > -4000) |>
-#   filter(!(name == "ll_test" & value < -500)) |>
-#   # filter(!(name == "ll_test" & value != 0)) |>
-#   # filter(!(name == "ll_test" & value < -800)) |>
-#   ggplot(aes(n, value, colour = name)) +
-#   facet_wrap(~name, scales = "free_y") +
-#   geom_point() +
-#   xlab("Mesh vertices") +
-#   ggtitle("inlabru: Temperature example")
-# library(patchwork)
-# theme_set(theme_light())
-# g1 / g3/ g2
-#
-# out2 |>
-#   ggplot(aes(n, ll_train)) +
-#   geom_point() +
-#   xlab("Mesh vertices") +
-#   ggtitle("Temperature example")
+out4 <- tidyr::pivot_longer(select(out2, cutoff, n, mgcv_edf:sdmTMB_cAIC_noprior), cols = mgcv_edf:sdmTMB_cAIC_noprior)
 
-# dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
-#   ggplot(aes(n, rmse_train)) + geom_point()
-# dplyr::filter(df, converged==TRUE, n < nrow(haul_new)) |>
-#   ggplot(aes(n, rmse_test)) + geom_line()
+out4 |>
+  filter(!grepl("noprior", name)) |>
+  mutate(type = ifelse(grepl("edf", name), "EDF", "cAIC")) |>
+  ggplot(aes(n, value, colour = name)) +
+  geom_line() +
+  facet_wrap(~type, scales = "free_y")
+ggsave("figures/temperature-sdmTMB-mgcv-edf.pdf", width = 7.5, height = 3)
 
-# dplyr::filter(df, converged == TRUE, n < nrow(haul_new)) |>
-#   ggplot(aes(n, dens_ll_train)) +
-#   geom_point()
-# dplyr::filter(df, converged == TRUE, n < nrow(haul_new)) |>
-#   ggplot(aes(n, dens_ll_test)) +
-#   geom_point() +
-#   geom_line()
+# out5 <- tidyr::pivot_longer(select(out2, cutoff, n, mgcv_edf, sdmTMB_edf, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
+
+# -------------------------------------------------
+# across a grid of PC priors
+
+torun <- expand.grid(
+  cutoff = exp(seq(log(8), log(150), length.out = 10)),
+  range_gt = seq(20, 1200, length.out = 8),
+  sigma_lt = seq(2, 12, length.out = 3),
+  run_inla = FALSE,
+  run_mgcv = FALSE,
+  run_noprior = FALSE
+)
+nrow(torun)
+
+plan(multisession, workers = 10)
+out_pc <- furrr::future_pmap(torun, run_cv)
+plan(sequential)
+saveRDS(out_pc, file = "output/01_loocv_temp_pc_priors.rds")
+
+torun2 <- expand.grid(
+  cutoff = exp(seq(log(8), log(150), length.out = 10)),
+  range_gt = NA,
+  sigma_lt = NA,
+  run_inla = FALSE,
+  run_mgcv = FALSE,
+  run_noprior = TRUE
+)
+nrow(torun2)
+plan(multisession, workers = 10)
+out_pc2 <- furrr::future_pmap(torun2, run_cv)
+plan(sequential)
+saveRDS(out_pc2, file = "output/01_loocv_temp_pc_priors2.rds")
+
+out_pc <- readRDS("output/01_loocv_temp_pc_priors.rds")
+out_pc2 <- readRDS("output/01_loocv_temp_pc_priors2.rds")
+
+out_pc <- out_pc |>
+  dplyr::bind_rows() |>
+  mutate(type = "priors")
+out_pc <- bind_cols(out_pc, select(torun, range_gt, sigma_lt))
+
+out_pc2 <- out_pc2 |>
+  dplyr::bind_rows() |>
+  mutate(type = "no priors") |>
+  select(-ll_train_sdmTMB, -ll_test_sdmTMB) |>
+  rename(ll_train_sdmTMB = ll_train_sdmTMB_noprior, ll_test_sdmTMB = ll_test_sdmTMB_noprior)
+
+out_pc <- bind_rows(out_pc, out_pc2)
+
+out_pc_long <- tidyr::pivot_longer(select(out_pc, type, cutoff, n, range_gt, sigma_lt, ll_test_sdmTMB:ll_train_sdmTMB), cols = ll_test_sdmTMB:ll_train_sdmTMB)
+
+x <- out_pc_long |>
+  mutate(test = grepl("test", name)) |>
+  mutate(test_char = ifelse(test, "Test", "Train")) |>
+  mutate(name = gsub("ll_test$", "ll_test_INLA", name)) |>
+  mutate(name = gsub("ll_train$", "ll_train_INLA", name)) |>
+  mutate(model = stringr::str_remove(name, "ll_(test|train)_")) |>
+  mutate(model = gsub("_", " ", model)) |>
+  filter(value != 0) |>
+  filter(!(value > -300 & test)) |>
+  filter(!(value > -2350 & !test)) |>
+  mutate(value = ifelse(test, value / N, value / (10 * N))) |>
+  mutate(prior = paste0("Range gt ", range_gt, ";", "Sigma lt ", sigma_lt))
+
+x_noprior <- filter(x, type == "no priors")
+x_prior <- filter(x, type == "priors")
+
+g1 <- x_prior |>
+  ggplot(aes(n, value, group = prior, colour = sigma_lt)) +
+  facet_wrap(~test_char, scales = "free_y") +
+  geom_line() +
+  scale_colour_viridis_c() +
+  labs(colour = "PC prior: Pr(Sigma < x) = 0.95", y = "Log density") +
+  xlab("Knots") +
+  theme(legend.position = "top") +
+  geom_line(data = x_noprior, colour = "red", lwd = 1, lty = 2)
+
+g2 <- x_prior |>
+  ggplot(aes(n, value, group = prior, colour = range_gt)) +
+  facet_wrap(~test_char, scales = "free_y") +
+  geom_line() +
+  scale_colour_viridis_c() +
+  labs(colour = "PC prior: Pr(Range > x) = 0.95", y = "Log density") +
+  xlab("Knots") +
+  # coord_cartesian(ylim = c(-2, NA)) +
+  theme(legend.position = "top") +
+  geom_line(data = x_noprior, colour = "red", lwd = 1, lty = 2)
+
+g1 / g2
+
+ggsave("figures/temperature-sdmTMB-pc-priors.pdf", width = 7.5, height = 7)
