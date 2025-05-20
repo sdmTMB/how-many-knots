@@ -10,7 +10,6 @@ library(sp)
 library(patchwork)
 library(mgcv)
 
-
 haul <- readRDS("data/haul_cleaned.rds")
 haul$date_formatted <- as.Date(as.numeric(haul$date_formatted), origin = "1970-01-01")
 haul$year <- lubridate::year(haul$date_formatted)
@@ -34,9 +33,6 @@ ns <- dplyr::group_by(haul_new, fold_id) |>
   dplyr::ungroup() |>
   dplyr::summarise(mean_n = mean(n), mean_other = mean(n_other))
 
-# haul$fold <- sample(c(1,2), size=nrow(haul), replace=T, prob = c(0.1,0.9))
-# initial loop over the cutoff values
-
 sp::coordinates(haul) <- c("X", "Y")
 boundary <- INLA::inla.nonconvex.hull(sp::coordinates(haul),
   convex = -0.05
@@ -56,7 +52,6 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
   df$n <- mesh$n
 
   if (!is.na(range_gt)) {
-    # Create SPDE model with PC priors
     matern <- INLA::inla.spde2.pcmatern(
       mesh,
       prior.sigma = c(sigma_lt, 0.05),
@@ -135,14 +130,12 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
       }
     }
 
-
     if (run_mgcv) {
       mgcv_k <- round(df$n / 3)
       if (mgcv_k > 350) run_mgcv <- FALSE
       df$mgcv_k <- mgcv_k
       fit_train_mgcv <- tryCatch(mgcv::gam(
         temperature_at_gear_c_der ~ zday + I(zday^2) + s(X, Y, k = mgcv_k),
-        # temperature_at_gear_c_der ~ zday + I(zday^2) + s(X, Y),
         data = this_dat,
         mesh = this_mesh,
       ), error = function(e) {
@@ -254,9 +247,8 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
     }
 
     if (run_inla) {
-      # If any part failed, mark the fold as failed
+      # if any part failed, mark the fold as failed
       if (is.null(pred_train) || is.null(pred_test) || is.na(tau)) {
-        fold_failed <- TRUE
         break
       }
 
@@ -357,7 +349,6 @@ out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols
 N <- nrow(haul)
 
 theme_set(ggsidekick::theme_sleek())
-# theme_set(gfplot::theme_pbs())
 x <- out3 |>
   mutate(test = grepl("test", name)) |>
   mutate(test_char = ifelse(test, "Test", "Train")) |>
@@ -368,7 +359,8 @@ x <- out3 |>
   filter(value != 0) |>
   filter(!(value > -300 & test)) |>
   filter(!(value > -2350 & !test)) |>
-  mutate(value = ifelse(test, value / N, value / (10 * N)))
+  mutate(value = ifelse(test, value / N, value / (10 * N))) |>
+  filter(cutoff < 200)
 
 x |>
   ggplot(aes(n, value, colour = model)) +
@@ -415,7 +407,9 @@ g3 <- x |>
   xlab("Smoother basis dimension (k)") +
   theme(legend.position = "top")
 
-g2 / g1 / g3 + plot_layout(axes = "collect", guides = "collect") & theme(legend.position = "right")
+g2 / g1 / g3 +
+  plot_layout(axes = "collect", guides = "collect") &
+  theme(legend.position = "right")
 
 ggsave("figures/temperature-inla-sdmTMB-mgcv.pdf", width = 7.5, height = 7)
 
@@ -428,8 +422,6 @@ out4 |>
   geom_line() +
   facet_wrap(~type, scales = "free_y")
 ggsave("figures/temperature-sdmTMB-mgcv-edf.pdf", width = 7.5, height = 3)
-
-# out5 <- tidyr::pivot_longer(select(out2, cutoff, n, mgcv_edf, sdmTMB_edf, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
 
 # -------------------------------------------------
 # across a grid of PC priors
@@ -467,11 +459,11 @@ out_pc <- readRDS("output/01_loocv_temp_pc_priors.rds")
 out_pc2 <- readRDS("output/01_loocv_temp_pc_priors2.rds")
 
 out_pc <- out_pc |>
-  dplyr::bind_rows() |>
+  bind_rows() |>
   mutate(type = "priors")
 
 out_pc2 <- out_pc2 |>
-  dplyr::bind_rows() |>
+  bind_rows() |>
   mutate(type = "no priors") |>
   select(-ll_train_sdmTMB, -ll_test_sdmTMB) |>
   rename(ll_train_sdmTMB = ll_train_sdmTMB_noprior, ll_test_sdmTMB = ll_test_sdmTMB_noprior)
@@ -513,7 +505,6 @@ g2 <- x_prior |>
   scale_colour_viridis_c(option = "D") +
   labs(colour = "Matérn GMRF PC prior:\nPr(Range > x) = 0.95", y = "Log density") +
   xlab("Knots") +
-  # coord_cartesian(ylim = c(-2, NA)) +
   theme(legend.position = "top") +
   geom_line(data = x_noprior, colour = "red", lwd = 1, lty = 2)
 
