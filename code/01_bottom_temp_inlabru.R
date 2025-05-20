@@ -339,7 +339,7 @@ run_cv <- function(cutoff, folds = 1:10, run_inla = TRUE, range_gt = 100, sigma_
 out <- run_cv(cutoff = 100, folds = 1:2, run_noprior = FALSE, run_inla = FALSE, run_mgcv = FALSE)
 
 # torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
-torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 30)))
+torun <- data.frame(cutoff = exp(seq(log(8), log(500), length.out = 100)))
 nrow(torun)
 torun$cutoff
 
@@ -469,7 +469,6 @@ out_pc2 <- readRDS("output/01_loocv_temp_pc_priors2.rds")
 out_pc <- out_pc |>
   dplyr::bind_rows() |>
   mutate(type = "priors")
-out_pc <- bind_cols(out_pc, select(torun, range_gt, sigma_lt))
 
 out_pc2 <- out_pc2 |>
   dplyr::bind_rows() |>
