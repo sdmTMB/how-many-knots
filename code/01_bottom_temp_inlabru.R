@@ -10,7 +10,6 @@ library(sp)
 library(patchwork)
 library(mgcv)
 
-set.seed(2021)
 
 haul <- readRDS("data/haul_cleaned.rds")
 haul$date_formatted <- as.Date(as.numeric(haul$date_formatted), origin = "1970-01-01")
@@ -24,7 +23,9 @@ haul$log_depth_scaled2 <- as.numeric(haul$log_depth_scaled2)
 haul_new <- dplyr::filter(haul, year == 2018, !is.na(temperature_at_gear_c_der))
 haul_new <- dplyr::filter(haul_new, !is.na(log_depth_scaled))
 haul_new <- dplyr::filter(haul_new, !is.na(zday))
-haul_new$fold_id <- rep(1:10, length.out = nrow(haul_new))
+set.seed(123)
+# haul_new$fold_id <- rep(1:10, length.out = nrow(haul_new))
+haul_new$fold_id <- sample(1:10, size = nrow(haul_new), replace = TRUE)
 haul_new$pred_train <- NA
 haul <- haul_new
 
@@ -500,8 +501,8 @@ g1 <- x_prior |>
   ggplot(aes(n, value, group = prior, colour = sigma_lt)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
-  scale_colour_viridis_c() +
-  labs(colour = "PC prior: Pr(Sigma < x) = 0.95", y = "Log density") +
+  scale_colour_viridis_c(option = "G") +
+  labs(colour = "Matérn GMRF PC prior:\nPr(Sigma < x) = 0.95", y = "Log density") +
   xlab("Knots") +
   theme(legend.position = "top") +
   geom_line(data = x_noprior, colour = "red", lwd = 1, lty = 2)
@@ -510,13 +511,13 @@ g2 <- x_prior |>
   ggplot(aes(n, value, group = prior, colour = range_gt)) +
   facet_wrap(~test_char, scales = "free_y") +
   geom_line() +
-  scale_colour_viridis_c() +
-  labs(colour = "PC prior: Pr(Range > x) = 0.95", y = "Log density") +
+  scale_colour_viridis_c(option = "D") +
+  labs(colour = "Matérn GMRF PC prior:\nPr(Range > x) = 0.95", y = "Log density") +
   xlab("Knots") +
   # coord_cartesian(ylim = c(-2, NA)) +
   theme(legend.position = "top") +
   geom_line(data = x_noprior, colour = "red", lwd = 1, lty = 2)
 
-g1 / g2
+g2 / g1
 
 ggsave("figures/temperature-sdmTMB-pc-priors.pdf", width = 7.5, height = 7)
