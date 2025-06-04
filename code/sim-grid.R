@@ -122,13 +122,18 @@ pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse
   scale_colour_viridis_d(end = 0.9, option = "C")
 ggsave("figures/sim-grid-rmse.pdf", width = 9, height = 6)
 
-make_panels <- function(.term) {
+make_panels <- function(.term, true_term = NULL) {
   x <- pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
     filter(name == .term)
 
   if (.term == "sigma_O_hat") {
     x <- filter(x, value < 20)
   }
+  if (.term == "range_hat") {
+    x <- filter(x, value < 20)
+  }
+  
+  true <- select(x, -value, -seed, -name, -cutoff) |> distinct()
 
   g <- x |> 
     ggplot(aes(mesh_n, value)) +
@@ -139,11 +144,33 @@ make_panels <- function(.term) {
     ) +
     ylab(.term) +
     xlab("Mesh knots") +
-    ggtitle(.term) +
+    # ggtitle(.term) +
     labs(colour = "Range") +
     geom_line(aes(colour = factor(round(range, 2)))) +
     ggsidekick::theme_sleek() +
     scale_colour_viridis_d(end = 0.9, option = "C")
+  
+  if (.term == "range_hat") {
+    g <- g +
+      geom_hline(data = true, mapping = aes(yintercept = range, colour = factor(round(range, 2))), lty = 2)+
+      ylab("Spatial range")
+  }
+  if (.term == "sigma_O_hat") {
+    g <- g +
+      geom_hline(data = true, mapping = aes(yintercept = sigma_O), lty = 2) +
+      ylab("sigma_O (spatial SD)")
+  }
+  if (.term == "phi_hat") {
+    g <- g +
+      geom_hline(data = true, mapping = aes(yintercept = phi), lty = 2) + 
+      ylab("Observation SD (phi)")
+  }
+  if (.term == "rmse_true") { 
+    g <- g + ylab("RMSE from truth")
+  }
+  if (.term == "leftout_loglik") { 
+    g <- g + ylab("Left-out prediction log likelihood")
+  }
 
   # if (.term == "phi_hat") {
   #   g <- g + geom_hline
