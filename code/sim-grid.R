@@ -106,7 +106,7 @@ if (!file.exists(f)) {
     N = c(1000)
   )
   out_small <- furrr::future_pmap_dfr(torun, sim_and_fit)
-  saveRDS(out, file = f)
+  saveRDS(out_small, file = f)
 } else {
   out_small <- readRDS(f)
 }
@@ -139,8 +139,8 @@ pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse
   scale_colour_viridis_d(end = 0.9, option = "C")
 ggsave("figures/sim-grid-rmse.pdf", width = 9, height = 6)
 
-make_panels <- function(.term, true_term = NULL) {
-  x <- pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
+make_panels <- function(.term, data = out) {
+  x <- pivot_longer(data, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
     filter(name == .term)
 
   if (.term == "sigma_O_hat") {
@@ -204,18 +204,13 @@ make_panels("sigma_O_hat")
 make_panels("range_hat")
 make_panels("leftout_loglik")
 
-x <- pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
-  filter(name == .term)
+make_panels("leftout_loglik", data = out_small)
 
 x <- filter(out, sigma_O == 2, phi == 0.05, range == 0.05) |> 
   filter(sigma_O_hat < 20)
-
 hat <- pivot_longer(x, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true))
 ggplot(hat, aes(mesh_n, value)) + geom_line() +
   facet_wrap(~name, scales = "free_y")
-
-
-
 
 # title <- paste0(
 #   "N = ", N,
