@@ -263,6 +263,8 @@ if (FALSE) {
   d2$species <- as.character(d2$species)
   g <- lapply(split(d2, d2$species), make_panel)
   patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
+  ggsave("figures/groundfish-cv-density.pdf", width = 7, height = 7)
+  ggsave("figures/groundfish-cv-density.png", width = 7, height = 7)
 
   theta <- readRDS("output/gf-cv-full-fit.rds")
   theta <- bind_rows(theta) |> filter(species != "yelloweye rockfish") |>
@@ -289,8 +291,11 @@ if (FALSE) {
     ggplot(aes(n, est)) +
     geom_ribbon(aes(ymin = lwr, ymax = upr)) +
     geom_line() +
-    facet_grid(term~species, scales = "free")
-
+    facet_grid(term~species, scales = "free") +
+    ggsidekick::theme_sleek() +
+    ylab("Estimate")
+  ggsave("figures/groundfish-cv-parameters.pdf", width = 8, height = 6)
+  
   d <- readRDS("output/gf-cv-blocked-out.rds")
   d <- bind_rows(d)
   d |>
@@ -300,8 +305,6 @@ if (FALSE) {
     geom_line() +
     facet_grid(species~bin_width, scales = "free_y") +
     geom_smooth(se = FALSE)
-
-  1
 }
 
 ##############
