@@ -1,12 +1,10 @@
-# remotes::install_github("inlabru-org/fmesher", ref = "stable")
 library(sf)
-# library(sp)
 library(sdmTMB)
 library(lubridate)
 library(dplyr)
 library(future)
 library(viridis)
-# plan(multisession)
+library(ggplot2)
 haul <- readRDS("data/haul_cleaned.rds")
 catch <- readRDS("data/catch_cleaned.rds")
 haul$trawl_id <- as.numeric(haul$trawl_id)
@@ -186,116 +184,41 @@ df <- expand.grid(
   species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
 )
 nrow(df)
-plan(multicore, workers = 80L)
-out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
-plan(sequential)
-saveRDS(out, file = "output/gf-cv-random-out.rds")
-
-# strip width blocked CV: ---------------------------------------------------------
-df <- expand.grid(
-  cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
-  bin_width = seq(10, 130, by = 40),
-  seed = 123,
-  species = c("sablefish", "arrowtooth flounder", "petrale sole")
-)
-nrow(df)
-plan(multicore, workers = 80L)
-out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
-saveRDS(out, file = "output/gf-cv-blocked-out.rds")
-plan(sequential)
-
-plan(multicore, workers = 80L)
-df <- expand.grid(
-  cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
-  bin_width = 10,
-  seed = 123,
-  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
-)
-out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
-saveRDS(out2, file = "output/gf-cv-full-fit.rds")
-plan(sequential)
-
+f <- "output/gf-cv-random-out.rds"
+if (!file.exists(f)) {
+  plan(multicore, workers = 80L)
+  out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
+  plan(sequential)
+  saveRDS(out, file = f)
+} else {
+  out <- readRDS(f)
+}
 
 if (FALSE) {
-  library(ggplot2)
-  out <- readRDS("output/gf-cv-random-out.rds")
-  out_df <- bind_rows(out) |> filter(species != "yelloweye rockfish")
+  # strip width blocked CV: ---------------------------------------------------------
+  df <- expand.grid(
+    cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+    bin_width = seq(10, 130, by = 40),
+    seed = 123,
+    species = c("sablefish", "arrowtooth flounder", "petrale sole")
+  )
+  nrow(df)
+  plan(multicore, workers = 80L)
+  out <- furrr::future_pmap(df, run_cv, parallel = FALSE)
+  saveRDS(out, file = "output/gf-cv-blocked-out.rds")
+  plan(sequential)
 
-  make_panel <- function(dat) {
-    if (dat$species[[1]] == "lingcod") {
-      dat <- filter(dat, test_dens_ll_sum > -100000)
-    }
+  plan(multicore, workers = 80L)
+  df <- expand.grid(
+    cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+    bin_width = 10,
+    seed = 123,
+    species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+  )
+  out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
+  saveRDS(out2, file = "output/gf-cv-full-fit.rds")
+  plan(sequential)
 
-    dat |>
-      select(n, converged, cutoff, species, seed, test_dens_ll_sum, train_dens_ll_sum) |>
-      tidyr::pivot_longer(cols = c(test_dens_ll_sum, train_dens_ll_sum), names_to = "ll_type") |>
-      filter(n > 80, converged) |>
-      mutate(ll_type = ifelse(grepl("test", ll_type), "Out of sample", "In sample")) |>
-      group_by(ll_type, species, seed) |>
-      # mutate(
-      #   value = value - value[n()]
-      # ) |>
-      group_by(n, cutoff, ll_type, species) |>
-      summarize(est = mean(value), lwr = min(value), upr = max(value)) |>
-      group_by(ll_type, species) |>
-      mutate(
-        lwr = lwr - max(est),
-        upr = upr - max(est),
-        est = est - max(est)
-      ) |>
-      ggplot(aes(n, est, colour = cutoff)) +
-      scale_colour_viridis(direction = -1, end = 0.9, limits = c(min(out_df$cutoff), max(out_df$cutoff))) +
-      geom_line() +
-      facet_wrap(~ll_type, scales = "free_y", ncol = 2) +
-      # geom_point(aes(size = cutoff), pch = 21) +
-      geom_point(pch = 21) +
-      geom_linerange(aes(ymin = lwr, ymax = upr)) +
-      geom_smooth(se = FALSE, method = "gam", colour = "grey50") +
-      ylab("Relative log likelihood") +
-      xlab("Mesh vertices") +
-      ggsidekick::theme_sleek() +
-      labs(colour = "Cutoff") +
-      ggtitle(stringr::str_to_title(dat$species[1])) +
-      geom_hline(yintercept = 0, lty = 2, col = "grey50")
-  }
-
-  d2 <- filter(out_df, species != "lingcod")
-  d2$species <- as.character(d2$species)
-  g <- lapply(split(d2, d2$species), make_panel)
-  patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
-  ggsave("figures/groundfish-cv-density.pdf", width = 7, height = 7)
-  ggsave("figures/groundfish-cv-density.png", width = 7, height = 7)
-
-  theta <- readRDS("output/gf-cv-full-fit.rds")
-  theta <- bind_rows(theta) |> filter(species != "yelloweye rockfish") |>
-    filter(!isFALSE(converged))
-
-  theta |>
-    tidyr::pivot_longer(cols = estimate) |>
-    filter(value < 1000) |>
-    ggplot(aes(n, value)) + geom_line() +
-    facet_grid(term~species, scales = "free")
-
-  est <- theta |> tidyr::pivot_longer(cols = estimate, values_to = "est")
-  lwr <- theta |> tidyr::pivot_longer(cols = conf.low, values_to = "lwr")
-  upr <- theta |> tidyr::pivot_longer(cols = conf.high, values_to = "upr")
-  est <- dplyr::bind_cols(est, select(lwr, lwr))
-  est <- dplyr::bind_cols(est, select(upr, upr))
-
-  est |>
-    filter(sanity) |>
-    # filter(upr < 1000) |>
-    filter(cutoff < 80) |>
-    filter(term %in% c("phi", "sigma_O", "range_a", "range_b")) |>
-      # filter(term %in% c("range_a")) |>
-    ggplot(aes(n, est)) +
-    geom_ribbon(aes(ymin = lwr, ymax = upr)) +
-    geom_line() +
-    facet_grid(term~species, scales = "free") +
-    ggsidekick::theme_sleek() +
-    ylab("Estimate")
-  ggsave("figures/groundfish-cv-parameters.pdf", width = 8, height = 6)
-  
   d <- readRDS("output/gf-cv-blocked-out.rds")
   d <- bind_rows(d)
   d |>
@@ -303,162 +226,86 @@ if (FALSE) {
     # filter(bin_width < 100) |>
     ggplot(aes(n, test_dens_ll_sum, colour = factor(bin_width))) +
     geom_line() +
-    facet_grid(species~bin_width, scales = "free_y") +
+    facet_grid(species ~ bin_width, scales = "free_y") +
     geom_smooth(se = FALSE)
 }
 
-##############
+out_df <- bind_rows(out) |> filter(species != "yelloweye rockfish")
 
-#
-#
-#
-#
-#
-# df <- expand.grid(
-#   # cutoff = 40,
-#   # bin_width = 10,
-#   cutoff = round(exp(seq(log(12), log(175), length.out = 20))),
-#   bin_width = seq(10, 130, by = 40),
-#   species = c("sablefish", "arrowtooth flounder", "lingcod", "petrale sole")
-#   # create mesh
-# )
-# # out <- purrr::pmap(df, run_cv, parallel = T)
-# nrow(df)
-# cores <- 40
-# nrow(df) * 560 / 60 / 60 / cores
-# df
-#
-# unique(catch$common_name)
-# set.seed(1234)
-# plan(multicore, workers = 50L)
-# tictoc::tic()
-# # out <- purrr::pmap(df[1:3, ], run_cv, parallel = T)
-# out <- furrr::future_pmap(df[1:3, ], run_cv, parallel = FALSE)
-# tictoc::toc()
-# saveRDS(out, "output/02-binomial-blockCV-2025-03-31.rds")
-#
-# tictoc::tic()
-# # out2 <- purrr::pmap(df[1:2, ], run_cv, do_full_fit = TRUE, parallel = T)
-# out2 <- filter(df, bin_width == 10) |>
-#   furrr::future_pmap(run_cv, do_full_fit = TRUE, parallel = FALSE)
-# tictoc::toc()
-# plan(sequential)
-# saveRDS(out2, "output/02-binomial-blockCV-pars-2025-03-28.rds")
-#
-# out <- readRDS("output/02-binomial-blockCV-2025-03-31.rds")
-# out2 <- readRDS("output/02-binomial-blockCV-pars-2025-03-28.rds")
-# out2 <- lapply(out2, function(x) {
-#  if (!"loglik" %in% names(x)) {
-#     x$loglik <- NA_real_
-#   }
-#   x
-# })
-# out2 <- lapply(out2, function(x) {
-#   x$loglik <- as.numeric(x$loglik)
-#   x
-# })
-# out <- dplyr::bind_rows(out)
-# out2 <- dplyr::bind_rows(out2)
-#
-# head(out)
-# head(out)
-# head(out2)
-# table(out$species)
-# names(out)
-#
-# library(ggplot2)
-# out |>
-#   filter(present_dens_ll > -1000) |>
-#   filter(bin_width < 100) |>
-#   ggplot(aes(n, present_dens_ll)) +
-#   geom_line() +
-#   facet_grid(species~bin_width, scales = "free_y") +
-#   geom_smooth(se = FALSE)
-#
-# unique(out2$species)
-# tidyr::pivot_longer(out2, cols = estimate) |>
-#   filter(value < 1000) |>
-#   ggplot(aes(n, value)) + geom_line() +
-#   facet_grid(term~species, scales = "free")
-#
-# unique(out2$species)
-# tidyr::pivot_longer(out2, cols = loglik) |>
-#   # filter(value < 1000) |>
-#   ggplot(aes(n, value)) + geom_line() +
-#   facet_wrap(~species, scales = "free")
-#
-# unique(out2$species)
-# tidyr::pivot_longer(out2, cols = cAIC) |>
-#   # filter(value < 1000) |>
-#   ggplot(aes(n, value)) + geom_line() +
-#   facet_wrap(~species, scales = "free")
-#
-# tidyr::pivot_longer(out2, cols = edf_omega) |>
-#   # filter(value < 1000) |>
-#   ggplot(aes(n, value)) + geom_line() +
-#   facet_wrap(~species, scales = "free") +
-#   geom_abline(intercept = 0, slope = 1, lty = 2)
-#
-# 1
-#
-# ## library(ggplot2)
-# ## d <- readRDS("output/02_binomial_blockCV.rds")
-# ##
-# ## # filter out the number of species that don't converge enough
-# ## d <- dplyr::filter(d, present_converged == TRUE) |>
-# ##   dplyr::group_by(species) |>
-# ##   dplyr::mutate(nobs = n()) |>
-# ##   dplyr::filter(nobs >= 10) |>
-# ##   dplyr::select(-nobs)
-# ## d$species <- as.factor(as.character(d$species))
-# ##
-# ## # Bring in the random
-# ## d_random <- readRDS("output/02_binomial_randomCV.rds")
-# ## d_random <- dplyr::filter(d_random, present_converged == TRUE) |>
-# ##   dplyr::filter(species %in% d$species) |>
-# ##   dplyr::mutate(bin_width = NA)
-# ##
-# ## # Larger bins result in more widely spaced test regions, beyond the estimated
-# ## # range. These regions are no longer correlated with the training data and predictions
-# ## # become more uncertain / not as good
-# ## dplyr::filter(d) |>
-# ##   ggplot(aes(n, present_dens_ll, group = bin_width, col = bin_width)) +
-# ##   geom_line() +
-# ##   facet_wrap(~species, scale = "free_y")
-# ##
-# ##
-# ## d |>
-# ##   ggplot(aes(n, range, group = bin_width, col = bin_width)) +
-# ##   geom_line() +
-# ##   facet_wrap(~species, scale = "free_y") +
-# ##   xlab("Mesh vertices") +
-# ##   ylab("Estimated spatial range (km)") +
-# ##   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
-# ##   theme_bw() +
-# ##   theme(
-# ##     strip.background = element_rect(fill = "white"),
-# ##     strip.text = element_text(size = 5),
-# ##     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
-# ##   ) +
-# ##   geom_point(data = d_random, aes(n, range), col = "black", alpha = 0.5)
-# ## ggsave("figures/groundfish_range_v_n.png", height = 5, width = 7)
-# ##
-# ##
-# ## library(scales)
-# ## d |> # divide by 12670 to get average ll per obs
-# ##   ggplot(aes(n, present_dens_ll / 12670, group = bin_width, col = bin_width)) +
-# ##   geom_line() +
-# ##   facet_wrap(~species, scale = "free_y") +
-# ##   xlab("Mesh vertices") +
-# ##   ylab("Predicted log likelihood") +
-# ##   scale_color_viridis(option = "magma", begin = 0.2, end = 0.8, name = "Strip width (km)") +
-# ##   theme_bw() +
-# ##   theme(
-# ##     strip.background = element_rect(fill = "white"),
-# ##     strip.text = element_text(size = 5),
-# ##     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
-# ##     axis.text.y = element_text(size = 8)
-# ##   ) +
-# ##   geom_point(data = d_random, aes(n, present_dens_ll / 12670), col = "black", alpha = 0.5) # +
-# ## # scale_y_continuous(labels = function(x) format(x, scientific=TRUE))
-# ## ggsave("figures/groundfish_loglik_v_n.png", height = 5, width = 7)
+make_panel <- function(dat) {
+  if (dat$species[[1]] == "lingcod") {
+    dat <- filter(dat, test_dens_ll_sum > -100000)
+  }
+
+  dat |>
+    select(n, converged, cutoff, species, seed, test_dens_ll_sum, train_dens_ll_sum) |>
+    tidyr::pivot_longer(cols = c(test_dens_ll_sum, train_dens_ll_sum), names_to = "ll_type") |>
+    filter(n > 80, converged) |>
+    mutate(ll_type = ifelse(grepl("test", ll_type), "Out of sample", "In sample")) |>
+    group_by(ll_type, species, seed) |>
+    # mutate(
+    #   value = value - value[n()]
+    # ) |>
+    group_by(n, cutoff, ll_type, species) |>
+    summarize(est = mean(value), lwr = min(value), upr = max(value)) |>
+    group_by(ll_type, species) |>
+    # mutate(
+    #   lwr = lwr - max(est),
+    #   upr = upr - max(est),
+    #   est = est - max(est)
+    # ) |>
+    ggplot(aes(n, est, colour = cutoff)) +
+    scale_colour_viridis(direction = -1, end = 0.9, limits = c(min(out_df$cutoff), max(out_df$cutoff))) +
+    geom_line() +
+    facet_wrap(~ll_type, scales = "free_y", ncol = 2) +
+    # geom_point(aes(size = cutoff), pch = 21) +
+    geom_point(pch = 21) +
+    geom_linerange(aes(ymin = lwr, ymax = upr)) +
+    geom_smooth(se = FALSE, method = "gam", colour = "grey50") +
+    ylab("Log predictive density") +
+    xlab("Mesh vertices") +
+    ggsidekick::theme_sleek() +
+    labs(colour = "Cutoff") +
+    ggtitle(stringr::str_to_title(dat$species[1]))
+  # geom_hline(yintercept = 0, lty = 2, col = "grey50")
+}
+
+d2 <- filter(out_df, species != "lingcod")
+d2$species <- as.character(d2$species)
+g <- lapply(split(d2, d2$species), make_panel)
+patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
+ggsave("figures/groundfish-cv-density.pdf", width = 7, height = 7)
+ggsave("figures/groundfish-cv-density.png", width = 7, height = 7)
+
+theta <- readRDS("output/gf-cv-full-fit.rds")
+theta <- bind_rows(theta) |>
+  filter(species != "yelloweye rockfish") |>
+  filter(!isFALSE(converged))
+
+theta |>
+  tidyr::pivot_longer(cols = estimate) |>
+  filter(value < 1000) |>
+  ggplot(aes(n, value)) +
+  geom_line() +
+  facet_grid(term ~ species, scales = "free")
+
+est <- theta |> tidyr::pivot_longer(cols = estimate, values_to = "est")
+lwr <- theta |> tidyr::pivot_longer(cols = conf.low, values_to = "lwr")
+upr <- theta |> tidyr::pivot_longer(cols = conf.high, values_to = "upr")
+est <- dplyr::bind_cols(est, select(lwr, lwr))
+est <- dplyr::bind_cols(est, select(upr, upr))
+
+est |>
+  filter(sanity) |>
+  # filter(upr < 1000) |>
+  filter(cutoff < 80) |>
+  filter(term %in% c("phi", "sigma_O", "range_a", "range_b")) |>
+  # filter(term %in% c("range_a")) |>
+  ggplot(aes(n, est)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "grey90") +
+  geom_line() +
+  facet_grid(term ~ stringr::str_to_title(species), scales = "free") +
+  ggsidekick::theme_sleek() +
+  ylab("Estimate") +
+  xlab("Mesh vertices")
+ggsave("figures/groundfish-cv-parameters.pdf", width = 8, height = 6)
