@@ -73,6 +73,9 @@ haul <- dplyr::filter(
   haul, year == 2018,
   !is.na(temperature_at_gear_c_der)
 )
+map_data <- rnaturalearth::ne_countries(
+  scale = "large",
+  returnclass = "sf", country = c("canada", "united states of america", "mexico"))
 coast <- suppressWarnings(suppressMessages(
   sf::st_crop(map_data,
               c(xmin = -130, ymin = 30, xmax = -107, ymax = 55))))
@@ -137,7 +140,9 @@ p3 <- ggplot() +
   ggsidekick::theme_sleek() +
   coord_sf(crs = 4326) +
   xlab("") +
-  ylab("")
+  ylab("") + 
+  scale_x_continuous(breaks = c(-130, -125, -120)) +
+  scale_y_continuous(breaks = c(30, 35, 40, 45, 50))
 
 p2 <- ggplot() +
   inlabru::gg(mesh1_ll) +
@@ -146,11 +151,13 @@ p2 <- ggplot() +
   ggsidekick::theme_sleek() +
   coord_sf(crs = 4326) +
   xlab("") +
-  ylab("")
+  ylab("") + 
+  scale_x_continuous(breaks = c(-130, -125, -120)) +
+  scale_y_continuous(breaks = c(30, 35, 40, 45, 50))
 
 p1 + p2 + p3 + plot_layout(ncol = 3, axes = "collect", axis_titles = "collect") +
  plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
  theme(plot.tag = element_text(size = 10))
 
-ggsave("figures/Figure_01.png", width = 7, height = 6)
-ggsave("figures/Figure_01.pdf", width = 7, height = 6)
+ggsave("figures/Figure_01.png", width = 8, height = 6)
+ggsave("figures/Figure_01.pdf", width = 8, height = 6)
