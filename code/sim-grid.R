@@ -100,12 +100,13 @@ if (!file.exists(f)) {
 f <- "output/sim-grid-output-small.rds"
 if (!file.exists(f)) {
   torun <- expand.grid(
-    .phi = seq(0.05, 3, length.out = 3),
-    .sigma_O = seq(0.1, 2, length.out = 3),
-    .range = seq(0.05, 0.6, length.out = 3),
+    .phi = c(0.05, 1.5, 3),
+    .sigma_O = c(0.1, 1, 2),
+    .range = c(0.05, 0.3, 0.6),
     N = c(1000)
   )
-  out_small <- furrr::future_pmap_dfr(torun, sim_and_fit)
+  set.seed(1)
+  out_small <- furrr::future_pmap_dfr(torun, sim_and_fit, .options = furrr::furrr_options(seed = TRUE))
   saveRDS(out_small, file = f)
 } else {
   out_small <- readRDS(f)
@@ -141,7 +142,9 @@ ggsave("figures/sim-grid-rmse.pdf", width = 9, height = 6)
 
 make_panels <- function(.term, data = out) {
   x <- pivot_longer(data, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
-    filter(name == .term)
+    filter(name == .term) |>
+    mutate(sigma_O_clean = paste0("Spatial SD: ", round(sigma_O, 2))) |>
+    mutate(phi_clean = paste0("Observation\nSD: ", round(phi, 2)))
 
   if (.term == "sigma_O_hat") {
     x <- filter(x, value < 10)
@@ -150,27 +153,24 @@ make_panels <- function(.term, data = out) {
   if (.term == "range_hat") {
     x <- filter(x, value < 20)
   }
-  
+
   true <- select(x, -value, -seed, -name, -cutoff) |> distinct()
 
-  g <- x |> 
+  g <- x |>
     ggplot(aes(mesh_n, value)) +
-    facet_grid(
-      paste("phi:", round(phi, 2))
-      ~ paste("sigma_O:", round(sigma_O, 2)),
-      scales = "free"
-    ) +
+    facet_grid(phi_clean ~ sigma_O_clean, scales = "free") +
     ylab(.term) +
     xlab("Mesh knots") +
     # ggtitle(.term) +
     labs(colour = "Range") +
     geom_line(aes(colour = factor(round(range, 2)))) +
     ggsidekick::theme_sleek() +
+    scale_x_continuous(breaks = seq(0, 1500, 500)) +
     scale_colour_viridis_d(end = 0.9, option = "C")
-  
+
   if (.term == "range_hat") {
     g <- g +
-      geom_hline(data = true, mapping = aes(yintercept = range, colour = factor(round(range, 2))), lty = 2)+
+      geom_hline(data = true, mapping = aes(yintercept = range, colour = factor(round(range, 2))), lty = 2) +
       ylab("Spatial range")
   }
   if (.term == "sigma_O_hat") {
@@ -180,14 +180,14 @@ make_panels <- function(.term, data = out) {
   }
   if (.term == "phi_hat") {
     g <- g +
-      geom_hline(data = true, mapping = aes(yintercept = phi), lty = 2) + 
+      geom_hline(data = true, mapping = aes(yintercept = phi), lty = 2) +
       ylab("Observation SD (phi)")
   }
-  if (.term == "rmse_true") { 
-    g <- g + ylab("Left-out-data RMSE from truth")
+  if (.term == "rmse_true") {
+    g <- g + ylab("Predictive RMSE from truth")
   }
-  if (.term == "leftout_loglik") { 
-    g <- g + ylab("Left-out-data log likelihood")
+  if (.term == "leftout_loglik") {
+    g <- g + ylab("Predictive log density")
   }
 
   # if (.term == "phi_hat") {
@@ -204,13 +204,30 @@ make_panels("sigma_O_hat")
 make_panels("range_hat")
 make_panels("leftout_loglik")
 
-make_panels("leftout_loglik", data = out_small)
+# version for main text?
+x <- pivot_longer(out_small, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
+  filter(name == "leftout_loglik")
+# true <- select(x, -value, -seed, -name, -cutoff) |> distinct()
+x |>
+  mutate(sigma_O_clean = paste0("Spatial SD: ", round(sigma_O, 2))) |>
+  mutate(phi_clean = paste0("Observation\nSD: ", round(phi, 2))) |>
+  ggplot(aes(mesh_n, value)) +
+  facet_grid(phi_clean ~ sigma_O_clean, scales = "free") +
+  ylab("Predictive log density") +
+  xlab("Mesh knots") +
+  labs(colour = "Range") +
+  geom_line(aes(colour = factor(round(range, 2)))) +
+  ggsidekick::theme_sleek() +
+  scale_colour_viridis_d(end = 0.9, option = "C") +
+  tagger::tag_facets(tag_prefix = "(", position = list(x = 0.08, y = 0.89), tag = "panel")
+ggsave("figures/sim-grid-small-lpd.pdf", width = 6, height = 4)
+ggsave("figures/sim-grid-small-lpd.png", width = 6, height = 4)
 
-x <- filter(out, sigma_O == 2, phi == 0.05, range == 0.05) |> 
-  filter(sigma_O_hat < 20)
-hat <- pivot_longer(x, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true))
-ggplot(hat, aes(mesh_n, value)) + geom_line() +
-  facet_wrap(~name, scales = "free_y")
+# x <- filter(out_small, sigma_O == 2, phi == 0.05, range == 0.05) |>
+#   filter(sigma_O_hat < 20)
+# hat <- pivot_longer(x, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true))
+# ggplot(hat, aes(mesh_n, value)) + geom_line() +
+#   facet_wrap(~name, scales = "free_y")
 
 # title <- paste0(
 #   "N = ", N,
