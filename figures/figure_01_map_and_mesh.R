@@ -136,8 +136,8 @@ p3 <- ggplot() +
              alpha = 0.3, col = viridis::viridis(1), size = 0.4) +
   ggsidekick::theme_sleek() +
   coord_sf(crs = 4326) +
-  xlab("Longitude") +
-  ylab("Latitude")
+  xlab("") +
+  ylab("")
 
 p2 <- ggplot() +
   inlabru::gg(mesh1_ll) +
@@ -145,8 +145,8 @@ p2 <- ggplot() +
              alpha = 0.3, col = viridis::viridis(1), size = 0.4) +
   ggsidekick::theme_sleek() +
   coord_sf(crs = 4326) +
-  xlab("Longitude") +
-  ylab("Latitude")
+  xlab("") +
+  ylab("")
 
 p1 + p2 + p3 + plot_layout(ncol = 3, axes = "collect", axis_titles = "collect") +
  plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
