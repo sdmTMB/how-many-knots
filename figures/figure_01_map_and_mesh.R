@@ -105,7 +105,9 @@ p1 <- ggplot(coast_proj) +
       fill = c("grey40", "white"),
       line_col = "grey20"
     )
-  )
+  ) + 
+  scale_x_continuous(breaks = c(-130, -125, -120)) +
+  scale_y_continuous(breaks = c(30, 35, 40, 45, 50))
 p1
 
 
