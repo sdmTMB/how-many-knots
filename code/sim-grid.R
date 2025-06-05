@@ -112,34 +112,6 @@ if (!file.exists(f)) {
   out_small <- readRDS(f)
 }
 
-glimpse(out)
-
-pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
-  filter(name == "leftout_loglik") |>
-  ggplot(aes(mesh_n, value)) +
-  facet_grid(
-    paste("phi:", round(phi, 2))
-    ~ paste("sigma_O:", round(sigma_O, 2)),
-    scales = "free"
-  ) +
-  geom_line(aes(colour = factor(round(range, 2)))) +
-  ggsidekick::theme_sleek() +
-  scale_colour_viridis_d(end = 0.9, option = "C")
-ggsave("figures/sim-grid-ll.pdf", width = 9, height = 6)
-
-pivot_longer(out, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
-  filter(name == "rmse_true") |>
-  ggplot(aes(mesh_n, value)) +
-  facet_grid(
-    paste("phi:", round(phi, 2))
-    ~ paste("sigma_O:", round(sigma_O, 2)),
-    scales = "free"
-  ) +
-  geom_line(aes(colour = factor(round(range, 2)))) +
-  ggsidekick::theme_sleek() +
-  scale_colour_viridis_d(end = 0.9, option = "C")
-ggsave("figures/sim-grid-rmse.pdf", width = 9, height = 6)
-
 make_panels <- function(.term, data = out) {
   x <- pivot_longer(data, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
     filter(name == .term) |>
@@ -187,7 +159,7 @@ make_panels <- function(.term, data = out) {
     g <- g + ylab("Predictive RMSE from truth")
   }
   if (.term == "leftout_loglik") {
-    g <- g + ylab("Predictive log density")
+    g <- g + ylab("Log predictive density")
   }
 
   # if (.term == "phi_hat") {
@@ -213,7 +185,7 @@ x |>
   mutate(phi_clean = paste0("Observation\nSD: ", round(phi, 2))) |>
   ggplot(aes(mesh_n, value)) +
   facet_grid(phi_clean ~ sigma_O_clean, scales = "free") +
-  ylab("Predictive log density") +
+  ylab("Log predictive density") +
   xlab("Mesh knots") +
   labs(colour = "Range") +
   geom_line(aes(colour = factor(round(range, 2)))) +
@@ -222,26 +194,3 @@ x |>
   tagger::tag_facets(tag_prefix = "(", position = list(x = 0.08, y = 0.89), tag = "panel")
 ggsave("figures/sim-grid-small-lpd.pdf", width = 6, height = 4)
 ggsave("figures/sim-grid-small-lpd.png", width = 6, height = 4)
-
-# x <- filter(out_small, sigma_O == 2, phi == 0.05, range == 0.05) |>
-#   filter(sigma_O_hat < 20)
-# hat <- pivot_longer(x, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true))
-# ggplot(hat, aes(mesh_n, value)) + geom_line() +
-#   facet_wrap(~name, scales = "free_y")
-
-# title <- paste0(
-#   "N = ", N,
-#   ", range = ", .range,
-#   ", obs. SD = ", .phi,
-#   ", sigma_O = ", .sigma_O
-# )
-# filename <- paste0("figures/", gsub(" ", "", title), ".pdf")
-#
-# pivot_longer(ret, cols = -n) |>
-#   ggplot(aes(n, value)) +
-#   geom_point() +
-#   geom_line() +
-#   facet_wrap(~name, scales = "free_y") +
-#   geom_hline(data = true, mapping = aes(yintercept = value), lty = 2) +
-#   ggsidekick::theme_sleek() +
-#   ggtitle(title, subtitle = "10-fold cross validation")

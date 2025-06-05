@@ -318,3 +318,4 @@ est |>
   ylab("Estimate") +
   xlab("Mesh vertices")
 ggsave("figures/groundfish-cv-parameters.pdf", width = 8, height = 6)
+ggsave("figures/groundfish-cv-parameters.png", width = 8, height = 6)
