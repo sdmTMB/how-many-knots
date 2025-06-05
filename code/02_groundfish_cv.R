@@ -84,7 +84,6 @@ run_cv <- function(cutoff, bin_width, species, seed = NULL, do_full_fit = FALSE,
     fit_full <- try(sdmTMB(
       cpue_kg_km2 ~ -1 + as.factor(year) + poly(log_depth_scaled, 2),
       data = joined_dat,
-      offset = "log_area_swept_ha",
       mesh = mesh,
       time = "year",
       spatial = "on",
@@ -181,7 +180,7 @@ df <- expand.grid(
   cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
   bin_width = NA,
   seed = c(281, 92110, 27293, 8282, 812938),
-  species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
+  species = c("sablefish", "arrowtooth flounder", "petrale sole")
 )
 nrow(df)
 f <- "output/gf-cv-random-out.rds"
@@ -192,6 +191,22 @@ if (!file.exists(f)) {
   saveRDS(out, file = f)
 } else {
   out <- readRDS(f)
+}
+
+f <- "output/gf-cv-full-fit.rds"
+if (!file.exists(f)) {
+  plan(multicore, workers = 80L)
+  df <- expand.grid(
+    cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
+    bin_width = 10,
+    seed = 123,
+    species = c("sablefish", "arrowtooth flounder", "petrale sole")
+  )
+  out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
+  saveRDS(out2, file = f)
+  plan(sequential)
+} else {
+  out2 <- readRDS(f)
 }
 
 if (FALSE) {
@@ -208,22 +223,9 @@ if (FALSE) {
   saveRDS(out, file = "output/gf-cv-blocked-out.rds")
   plan(sequential)
 
-  plan(multicore, workers = 80L)
-  df <- expand.grid(
-    cutoff = round(exp(seq(log(10), log(175), length.out = 25))),
-    bin_width = 10,
-    seed = 123,
-    species = c("sablefish", "arrowtooth flounder", "petrale sole", "yelloweye rockfish")
-  )
-  out2 <- furrr::future_pmap(df, run_cv, do_full_fit = TRUE, parallel = FALSE)
-  saveRDS(out2, file = "output/gf-cv-full-fit.rds")
-  plan(sequential)
-
   d <- readRDS("output/gf-cv-blocked-out.rds")
   d <- bind_rows(d)
   d |>
-    # filter(test_dens_ll > -1000) |>
-    # filter(bin_width < 100) |>
     ggplot(aes(n, test_dens_ll_sum, colour = factor(bin_width))) +
     geom_line() +
     facet_grid(species ~ bin_width, scales = "free_y") +
@@ -257,6 +259,7 @@ make_panel <- function(dat) {
     ggplot(aes(n, est, colour = cutoff)) +
     scale_colour_viridis(direction = -1, end = 0.9, limits = c(min(out_df$cutoff), max(out_df$cutoff))) +
     geom_line() +
+    # facet_wrap(species~ll_type, scales = "free_y", ncol = 2) +
     facet_wrap(~ll_type, scales = "free_y", ncol = 2) +
     # geom_point(aes(size = cutoff), pch = 21) +
     geom_point(pch = 21) +
@@ -273,6 +276,12 @@ make_panel <- function(dat) {
 d2 <- filter(out_df, species != "lingcod")
 d2$species <- as.character(d2$species)
 g <- lapply(split(d2, d2$species), make_panel)
+library(patchwork)
+
+g[[1]] <- g[[1]] + tagger::tag_facets(tag_prefix = "(") + theme(tagger.panel.tag.text = element_text(colour = "grey50"))
+g[[2]] <- g[[2]] + tagger::tag_facets(tag_prefix = "(", tag_pool = letters[3:4]) + theme(tagger.panel.tag.text = element_text(colour = "grey50"))
+g[[3]] <- g[[3]] + tagger::tag_facets(tag_prefix = "(", tag_pool = letters[5:6]) + theme(tagger.panel.tag.text = element_text(colour = "grey50"))
+
 patchwork::wrap_plots(g, ncol = 1, axes = "collect", guides = "collect")
 ggsave("figures/groundfish-cv-density.pdf", width = 7, height = 7)
 ggsave("figures/groundfish-cv-density.png", width = 7, height = 7)
