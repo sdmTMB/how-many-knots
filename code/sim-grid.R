@@ -186,11 +186,12 @@ x |>
   ggplot(aes(mesh_n, value)) +
   facet_grid(phi_clean ~ sigma_O_clean, scales = "free") +
   ylab("Log predictive density") +
-  xlab("Mesh knots") +
+  xlab("Mesh vertices") +
   labs(colour = "Range") +
   geom_line(aes(colour = factor(round(range, 2)))) +
   ggsidekick::theme_sleek() +
   scale_colour_viridis_d(end = 0.9, option = "C") +
-  tagger::tag_facets(tag_prefix = "(", position = list(x = 0.08, y = 0.89), tag = "panel")
+  tagger::tag_facets(tag_prefix = "(", position = list(x = 0.08, y = 0.89), tag = "panel") +
+  theme(tagger.panel.tag.text = element_text(colour = "grey30"))
 ggsave("figures/sim-grid-small-lpd.pdf", width = 6, height = 4)
 ggsave("figures/sim-grid-small-lpd.png", width = 6, height = 4)

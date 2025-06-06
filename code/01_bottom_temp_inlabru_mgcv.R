@@ -397,57 +397,6 @@ x <- out3 |>
   mutate(value = ifelse(test, value / N, value / (10 * N))) |>
   filter(cutoff < 200)
 
-# x |>
-#   ggplot(aes(n, value, colour = model)) +
-#   facet_grid(~test_char, scales = "free_y") +
-#   geom_line() +
-#   scale_colour_brewer(palette = "Set2") +
-#   labs(colour = "Model", y = "Log density") +
-#   xlab("Knots") +
-#   coord_cartesian(ylim = c(-2, NA)) +
-#   theme(legend.position = "top")
-
-mods <- c("sdmTMB", "sdmTMB noprior", "INLA", "mgcv")
-cols <- RColorBrewer::brewer.pal(4, "Set2")
-names(cols) <- mods
-
-g1 <- x |>
-  filter(!grepl("mgcv", model)) |>
-  ggplot(aes(n, value, colour = model)) +
-  facet_wrap(~test_char, scales = "free_y") +
-  geom_line() +
-  scale_colour_manual(values = cols, drop = FALSE) +
-  labs(colour = "Model", y = "Log density") +
-  xlab("Mesh vertices") +
-  theme(legend.position = "top")
-
-g2 <- x |>
-  filter(!grepl("mgcv", model)) |>
-  ggplot(aes(cutoff, value, colour = model)) +
-  facet_wrap(~test_char, scales = "free_y") +
-  geom_line() +
-  scale_colour_manual(values = cols, drop = FALSE) +
-  labs(colour = "Model", y = "Log density") +
-  xlab("Cutoff distance") +
-  theme(legend.position = "top")
-
-g3 <- x |>
-  filter(grepl("mgcv", model)) |>
-  ggplot(aes(n / 3, value, colour = model)) +
-  facet_wrap(~test_char, scales = "free_y") +
-  geom_line() +
-  scale_colour_manual(values = cols, drop = FALSE) +
-  scale_x_continuous(breaks = seq(0, 300, 50)) +
-  labs(colour = "Model", y = "Log density") +
-  xlab("Smoother basis dimension (k)") +
-  theme(legend.position = "top")
-
-g2 / g1 / g3 +
-  plot_layout(axes = "collect", guides = "collect") &
-  theme(legend.position = "right")
-
-ggsave("figures/temperature-inla-sdmTMB-mgcv.pdf", width = 7.5, height = 7)
-
 one_panel <- function(model_name) {
   x |>
     filter(model %in% model_name) |>
@@ -480,35 +429,35 @@ g_inla +
 ggsave("figures/temperature-lpd-tmb-inla-mgcv.pdf", width = 7, height = 2.8)
 ggsave("figures/temperature-lpd-tmb-inla-mgcv.png", width = 7, height = 2.8)
 
-# RMSE??
-g00 <- x |>
-  filter(!grepl("mgcv", model)) |>
-  filter(test) |>
-  mutate(value = value * N) |>
-  mutate(value = value - max(value)) |>
-  ggplot(aes(n, value, colour = model)) +
-  facet_wrap(~test_char, scales = "free_y") +
-  geom_line() +
-  scale_colour_manual(values = cols, drop = FALSE) +
-  labs(colour = "Model", y = "Relative log density") +
-  xlab("Mesh vertices") +
-  theme(legend.position = "top")
-
-g0 <- tidyr::pivot_longer(out2, cols = ss_inla:ss_sdmTMB) |>
-  mutate(rmse = sqrt(value / N)) |>
-  ggplot(aes(n, rmse, colour = name)) +
-  # scale_colour_manual(values = cols, drop = FALSE) +
-  xlab("Mesh vertices") +
-  labs(colour = "Model", y = "RMSE") +
-  geom_line()
-
-g4 <- out2 |>
-  ggplot(aes(n, sigma_sdmTMB_noprior)) +
-  xlab("Mesh vertices") +
-  ylab("Observation error SD (sdmTMB)") +
-  geom_line()
-
-g00 / g0 / g4 + plot_layout(axes = "collect") # , guides = "collect")
+# # RMSE??
+# g00 <- x |>
+#   filter(!grepl("mgcv", model)) |>
+#   filter(test) |>
+#   mutate(value = value * N) |>
+#   mutate(value = value - max(value)) |>
+#   ggplot(aes(n, value, colour = model)) +
+#   facet_wrap(~test_char, scales = "free_y") +
+#   geom_line() +
+#   scale_colour_manual(values = cols, drop = FALSE) +
+#   labs(colour = "Model", y = "Relative log density") +
+#   xlab("Mesh vertices") +
+#   theme(legend.position = "top")
+#
+# g0 <- tidyr::pivot_longer(out2, cols = ss_inla:ss_sdmTMB) |>
+#   mutate(rmse = sqrt(value / N)) |>
+#   ggplot(aes(n, rmse, colour = name)) +
+#   # scale_colour_manual(values = cols, drop = FALSE) +
+#   xlab("Mesh vertices") +
+#   labs(colour = "Model", y = "RMSE") +
+#   geom_line()
+#
+# g4 <- out2 |>
+#   ggplot(aes(n, sigma_sdmTMB_noprior)) +
+#   xlab("Mesh vertices") +
+#   ylab("Observation error SD (sdmTMB)") +
+#   geom_line()
+#
+# g00 / g0 / g4 + plot_layout(axes = "collect") # , guides = "collect")
 
 out4 <- tidyr::pivot_longer(select(out2, cutoff, n, mgcv_edf:sdmTMB_cAIC_noprior), cols = mgcv_edf:sdmTMB_cAIC_noprior)
 
