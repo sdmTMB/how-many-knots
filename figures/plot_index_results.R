@@ -20,9 +20,11 @@ df <- dplyr::group_by(df, species) |>
   dplyr::mutate(n_conv = length(which(converged==TRUE))) 
 
 index <- left_join(index, df[,c("cutoff","species","converged", "n_conv")])
-index <- dplyr::filter(index, n_conv >= 3, converged == TRUE,
-                       species != "stripetail rockfish") # filter out species that have 0 - 1 models
 
+#index <- dplyr::filter(index, n_conv >= 3, converged == TRUE,
+#                       species != "stripetail rockfish") # filter out species that have 0 - 1 models
+index <- dplyr::filter(index, converged == TRUE, n_conv > 1)
+                       
 index$cutoff <- as.factor(index$cutoff)
 # index <- dplyr::filter(index, species == "arrowtooth flounder")
 capitalize_first <- function(x) {
@@ -34,9 +36,20 @@ ggplot(index, aes(year, log_est, group = cutoff, col = cutoff)) +
   geom_pointrange(aes(ymin = log_est - 1.96 * se, ymax = log_est + 1.96 * se), position = position_dodge(0.5), alpha = 0.7, fatten = 0.1) +
   xlab("Year") +
   ylab("Ln estimate") +
-  facet_wrap(~species, scale = "free_y", ncol = 5) +
+  facet_wrap(~species, scale = "free_y", ncol = 4) +
   scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Cutoff (km)")
 ggsave2("figures/SI_figure_indices", height = 7, width = 9)
+
+# do same plot with a subset of species showing patterns
+dplyr::filter(index, species %in% c("Lingcod","Petrale sole","Shortspine thornyhead")) |>
+ggplot(aes(year, log_est, group = cutoff, col = cutoff)) +
+  geom_pointrange(aes(ymin = log_est - 1.96 * se, ymax = log_est + 1.96 * se), position = position_dodge(0.5), alpha = 0.7, fatten = 0.1) +
+  xlab("Year") +
+  ylab("Ln estimate") +
+  facet_wrap(~species, scale = "free_y", ncol = 4) +
+  scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Cutoff (km)")
+ggsave2("figures/maintext_figure_indices", height = 7, width = 9)
+
 
 # do caterpillar plot of average error by species
 indx_se <- dplyr::group_by(index, species, cutoff) |>
@@ -55,9 +68,9 @@ p1 <- ggplot(indx_se, aes(species, mean_se, col = cutoff)) +
 p1
 ggsave2("figures/mean_index_se", height = 5, width = 5.25)
 
-
+index <- dplyr::filter(index, n_conv > 2)
 index_wide <- index |>
-  select(species, year, cutoff, est) |>
+  dplyr::select(species, year, cutoff, est) |>
   pivot_wider(names_from = cutoff, values_from = est, names_prefix = "cutoff_")
 
 cor_results <- index_wide |>
@@ -126,5 +139,7 @@ p3 <- ggplot(ratio_results_long, aes(species, ratio, col = cutoff)) +
   scale_y_continuous(lim = c(0, NA), expand = expansion(mult = c(0, 0.05)))
 
 
-gridExtra::grid.arrange(p1, p2, p3, nrow=1)
-ggsave2("figures/combo_gfish", height = 7, width = 7)
+pcombo <- gridExtra::grid.arrange(p1, p2, p3, nrow=1)
+ggsave(pcombo, filename = "figures/combo_gfish.png", height = 7, width = 7)
+ggsave(pcombo, filename = "figures/combo_gfish.pdf", height = 7, width = 7)
+#ggsave2(pcombo, "figures/combo_gfish", height = 7, width = 7)
