@@ -161,5 +161,5 @@ p1 + p2 + p3 + plot_layout(ncol = 3, axes = "collect", axis_titles = "collect") 
  plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
  theme(plot.tag = element_text(size = 10))
 
-ggsave("figures/Figure_01.png", width = 8, height = 6)
-ggsave("figures/Figure_01.pdf", width = 8, height = 6)
+ggsave("figures/Figure_01.png", width = 8, height = 4)
+ggsave("figures/Figure_01.pdf", width = 8, height = 4)

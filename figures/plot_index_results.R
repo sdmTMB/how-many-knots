@@ -42,13 +42,17 @@ ggsave2("figures/SI_figure_indices", height = 7, width = 9)
 
 # do same plot with a subset of species showing patterns
 dplyr::filter(index, species %in% c("Lingcod","Petrale sole","Shortspine thornyhead")) |>
-ggplot(aes(year, log_est, group = cutoff, col = cutoff)) +
-  geom_pointrange(aes(ymin = log_est - 1.96 * se, ymax = log_est + 1.96 * se), position = position_dodge(0.5), alpha = 0.7, fatten = 0.1) +
+  group_by(species) |> 
+  mutate(mean_log_est = mean(log_est)) |>
+  mutate(log_est = log_est - mean_log_est) |> 
+ggplot(aes(year, exp(log_est), group = cutoff, col = cutoff)) +
+  geom_pointrange(aes(ymin = exp(log_est - 1.96 * se), ymax = exp(log_est + 1.96 * se)), position = position_dodge(0.5), alpha = 0.7, fatten = 0.1) +
   xlab("Year") +
-  ylab("Ln estimate") +
+  ylab("Index estimate") +
   facet_wrap(~species, scale = "free_y", ncol = 4) +
-  scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Cutoff (km)")
-ggsave2("figures/maintext_figure_indices", height = 7, width = 9)
+  scale_color_viridis_d(option = "magma", begin = 0.2, end = 0.8, name = "Cutoff (km)") +
+  theme(legend.position.inside = c(0.76, 0.76), legend.position = "inside")
+ggsave2("figures/maintext_figure_indices", height = 2.8, width = 8.3)
 
 
 # do caterpillar plot of average error by species
