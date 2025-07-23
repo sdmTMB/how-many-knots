@@ -382,7 +382,7 @@ N <- nrow(haul)
 
 theme_set(ggsidekick::theme_sleek())
 
-out3 <- tidyr::pivot_longer(select(out2, cutoff, n, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
+out3 <- tidyr::pivot_longer(dplyr::select(out2, cutoff, n, ll_test:ll_train_mgcv), cols = ll_test:ll_train_mgcv)
 
 x <- out3 |>
   mutate(test = grepl("test", name)) |>
@@ -418,16 +418,16 @@ one_panel <- function(model_name) {
 
 th <- theme(tagger.panel.tag.text = element_text(colour = "grey30"))
 
-g_inla <- one_panel("INLA") + tagger::tag_facets(tag_prefix = "(", tag_pool = "a") + th
-g_sdmTMB <- one_panel("sdmTMB noprior") + tagger::tag_facets(tag_prefix = "(", tag_pool = "b") + th
-g_mgcv <- one_panel("mgcv") + xlab("Basis dimension (k)") + tagger::tag_facets(tag_prefix = "(", tag_pool = "c") + th
+g_inla <- one_panel("INLA") + tagger::tag_facets(tag_prefix = "(", tag_pool = "a") + th + guides(colour = "none")
+g_sdmTMB <- one_panel("sdmTMB noprior") + tagger::tag_facets(tag_prefix = "(", tag_pool = "b") + th + guides(colour = "none")
+g_mgcv <- one_panel("mgcv") + xlab("Basis dimension (k)") + tagger::tag_facets(tag_prefix = "(", tag_pool = "c") + th + theme(legend.position = "inside", legend.position.inside = c(0.8, 0.4))
 g_inla +
   g_sdmTMB +
   g_mgcv +
-  plot_layout(axes = "collect", guides = "collect") &
-  theme(legend.position = "right")
-ggsave("figures/temperature-lpd-tmb-inla-mgcv.pdf", width = 7, height = 2.8)
-ggsave("figures/temperature-lpd-tmb-inla-mgcv.png", width = 7, height = 2.8)
+  plot_layout(axes = "collect")
+  # theme(legend.position = "top")
+ggsave("figures/temperature-lpd-tmb-inla-mgcv.pdf", width = 7, height = 2.7)
+ggsave("figures/temperature-lpd-tmb-inla-mgcv.png", width = 7, height = 3.1)
 
 # # RMSE??
 # g00 <- x |>
