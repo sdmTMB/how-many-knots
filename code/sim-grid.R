@@ -1,3 +1,29 @@
+# questions:
+# - what ranges should we evaluate here if we want to ballpark match the NWFSC survey?
+# - survey X range = ~700 km
+# - survey Y range = ~1800 km
+# - survey mean nearest neighbour distance = 7.146
+# - survey mean points per year = 645
+# - grid is 12,000 cells 2 nm x 1.5 nm, 1 nm = 1.852 km
+
+# - for real data: arrowtooth range = ~ 500 km in long direction and ~ 200 in short direction
+# - sablefish is much smaller: maybe 100 in long direction and 50 in short direction? very rough
+
+# # so at max, range is this fraction of Y
+# 500/1800
+
+# # so at min, range is this fraction of X
+# 50/700
+
+# 100/1800
+# 300/700
+
+# so 0.05 to 0.3
+
+# in terms of sampling density, mean NN dist:
+# 7 / 700
+# 7 / 1800
+
 library(geoR)
 library(ggplot2)
 library(sdmTMB)
@@ -22,6 +48,9 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
   sim1 <- grf(N, cov.pars = c(.sigma_O, create_geoR_range(.range)), cov.model = "matern", kappa = 1)
   dat <- data.frame(x = sim1$coords[, 1], y = sim1$coords[, 2], z = sim1$data, obs = sim1$data + rnorm(N, 0, .phi))
   dat$fold_id <- sample(1:10, nrow(dat), replace = TRUE)
+
+#  browser()
+#  mean(spatstat.geom::nndist(X = dat$x,Y = dat$y))
 
   cutoffs <- exp(seq(log(0.005), log(0.15), length.out = 10))
 
@@ -81,17 +110,18 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
 # sim_and_fit(N = 200, .phi = 1, .sigma_O = 1, .range = 0.3)
 
 torun <- expand.grid(
-  .phi = seq(0.05, 3, length.out = 4),
+  .phi = seq(0.05, 2, length.out = 4),
   .sigma_O = seq(0.1, 2, length.out = 4),
-  .range = seq(0.05, 0.6, length.out = 4),
+  .range = seq(0.03, 0.3, length.out = 4),
   N = c(1000)
 )
 nrow(torun)
-plan(multicore)
+plan(multisession, workers = 5L)
 
 f <- "output/sim-grid-output.rds"
 if (!file.exists(f)) {
   out <- furrr::future_pmap_dfr(torun, sim_and_fit)
+#  out <- purrr::pmap_dfr(torun, sim_and_fit)
   saveRDS(out, file = f)
 } else {
   out <- readRDS(f)
@@ -100,9 +130,9 @@ if (!file.exists(f)) {
 f <- "output/sim-grid-output-small.rds"
 if (!file.exists(f)) {
   torun <- expand.grid(
-    .phi = c(0.05, 1.5, 3),
-    .sigma_O = c(0.1, 1, 2),
-    .range = c(0.05, 0.3, 0.6),
+    .phi = c(0.1, 1, 2),
+    .sigma_O = c(0.5, 1, 2),
+    .range = c(0.05, 0.1, 0.2),
     N = c(1000)
   )
   set.seed(1)
@@ -205,13 +235,13 @@ make_scenario_plot <- function(scen) {
   trues <- filter(out, scenario == scen) |>
     pivot_longer(cols = c(phi, sigma_O, range)) |>
     rename(true_value = value) |>
-    mutate(name = paste0(name, "_hat")) |> 
+    mutate(name = paste0(name, "_hat")) |>
     select(mesh_n, name, true_value)
 
-  x1 <- x1 |> left_join(trues) |> 
+  x1 <- x1 |> left_join(trues) |>
     mutate(name = factor(name, levels = c("leftout_loglik", "rmse_true", "phi_hat", "range_hat", "sigma_O_hat")))
 
-  x1 |> 
+  x1 |>
     ggplot(aes(mesh_n, value)) + geom_line() +
     geom_line(aes(y = true_value), lty = 2) +
     facet_wrap(~name, scales = "free_y", nrow = 5) +
@@ -219,19 +249,19 @@ make_scenario_plot <- function(scen) {
     ggsidekick::theme_sleek() + ylab("Value") + xlab("Mesh vertices")
 }
 
-unique(out$scenario)
-make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.23")
-make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.6")
+# unique(out$scenario)
+# make_scenario_plot("phi = 1.35, sigma_O = 2, range = 0.23")
+# make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.6")
 
-# an extreme top right scenario:
-make_scenario_plot("phi = 0.05, sigma_O = 2, range = 0.23")
+# # an extreme top right scenario:
+# make_scenario_plot("phi = 0.05, sigma_O = 2, range = 0.23")
 
-# more obs. error
-# now phi asymptotes
-make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.23")
+# # more obs. error
+# # now phi asymptotes
+# make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.23")
 
-make_scenario_plot("phi = 0.05, sigma_O = 0.73, range = 0.6")
+# make_scenario_plot("phi = 0.05, sigma_O = 0.73, range = 0.6")
 
-make_scenario_plot("phi = 2.02, sigma_O = 0.1, range = 0.6")
+# make_scenario_plot("phi = 2.02, sigma_O = 0.1, range = 0.6")
 
 filter(out, phi_hat > phi)
