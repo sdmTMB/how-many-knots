@@ -129,7 +129,7 @@ parsed_labels <- c(
   "Intercept" = "Intercept",
   "day" = "day",
   "day2" = "day^2",
-  "Spatial range" = "Spatial~range~kappa",  
+  "Spatial range" = "Spatial~range",  
   "Spatial SD" = "Spatial~sigma",
   "Obs SD" = "Observation~sigma"
 )
@@ -153,5 +153,5 @@ ggplot(all_df, aes(n, mean_estimate)) +
   ) +
   ggsidekick::theme_sleek()
 
-ggsave(filename = "figures/Figure_02b.png", width = 7, height = 5)
-ggsave(filename = "figures/Figure_02b.pdf", width = 7, height = 5)
+ggsave(filename = "figures/Figure_02b.png", width = 7, height = 4)
+ggsave(filename = "figures/Figure_02b.pdf", width = 7, height = 4)

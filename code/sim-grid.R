@@ -195,3 +195,43 @@ x |>
   theme(tagger.panel.tag.text = element_text(colour = "grey30"))
 ggsave("figures/sim-grid-small-lpd.pdf", width = 6, height = 4)
 ggsave("figures/sim-grid-small-lpd.png", width = 6, height = 4)
+
+out$scenario <- paste0("phi = ", round(out$phi, 2), ", sigma_O = ", round(out$sigma_O, 2), ", range = ", round(out$range, 2))
+
+make_scenario_plot <- function(scen) {
+  x1 <- filter(out, scenario == scen) |>
+    pivot_longer(cols = c(ends_with("hat"), rmse_true, leftout_loglik))
+
+  trues <- filter(out, scenario == scen) |>
+    pivot_longer(cols = c(phi, sigma_O, range)) |>
+    rename(true_value = value) |>
+    mutate(name = paste0(name, "_hat")) |> 
+    select(mesh_n, name, true_value)
+
+  x1 <- x1 |> left_join(trues) |> 
+    mutate(name = factor(name, levels = c("leftout_loglik", "rmse_true", "phi_hat", "range_hat", "sigma_O_hat")))
+
+  x1 |> 
+    ggplot(aes(mesh_n, value)) + geom_line() +
+    geom_line(aes(y = true_value), lty = 2) +
+    facet_wrap(~name, scales = "free_y", nrow = 5) +
+    ggtitle(scen) +
+    ggsidekick::theme_sleek() + ylab("Value") + xlab("Mesh vertices")
+}
+
+unique(out$scenario)
+make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.23")
+make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.6")
+
+# an extreme top right scenario:
+make_scenario_plot("phi = 0.05, sigma_O = 2, range = 0.23")
+
+# more obs. error
+# now phi asymptotes
+make_scenario_plot("phi = 1.03, sigma_O = 2, range = 0.23")
+
+make_scenario_plot("phi = 0.05, sigma_O = 0.73, range = 0.6")
+
+make_scenario_plot("phi = 2.02, sigma_O = 0.1, range = 0.6")
+
+filter(out, phi_hat > phi)
