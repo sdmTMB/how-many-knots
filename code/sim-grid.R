@@ -45,8 +45,8 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
   )
 
   set.seed(.seed)
-  sim1 <- grf(N, cov.pars = c(.sigma_O, create_geoR_range(.range)), cov.model = "matern", kappa = 1)
-  dat <- data.frame(x = sim1$coords[, 1], y = sim1$coords[, 2], z = sim1$data, obs = sim1$data + rnorm(N, 0, .phi))
+  sim1 <- grf(N, cov.pars = c(.sigma_O^2, create_geoR_range(.range)), cov.model = "matern", kappa = 1)
+  dat <- data.frame(x = sim1$coords[, 1], y = sim1$coords[, 2], z = sim1$data, obs = exp(sim1$data + rnorm(N, 0, .phi)))
   dat$fold_id <- sample(1:10, nrow(dat), replace = TRUE)
 
 #  browser()
@@ -62,7 +62,7 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
           obs ~ 1,
           data = dat, mesh = mesh,
           k_folds = 10, parallel = FALSE,
-          fold_ids = "fold_id"
+          fold_ids = "fold_id", family = lognormal(link = "log")
         )
         tidy_out <- map_dfr(fit_cv$models, \(m) tidy(m, "ran_pars"))
         grab_coef <- function(.term) {
@@ -74,7 +74,7 @@ sim_and_fit <- function(N, .phi, .sigma_O, .range, .seed = 1) {
         phi <- grab_coef("phi")
         sigma_O <- grab_coef("sigma_O")
         range <- grab_coef("range")
-        rmse_true <- sqrt(mean((fit_cv$data$z - fit_cv$data$cv_predicted)^2))
+        rmse_true <- sqrt(mean((exp(fit_cv$data$z) - fit_cv$data$cv_predicted)^2))
         data.frame(
           leftout_loglik = fit_cv$sum_loglik,
           cutoff = x,
@@ -118,19 +118,19 @@ torun <- expand.grid(
 nrow(torun)
 plan(multisession, workers = 5L)
 
-f <- "output/sim-grid-output.rds"
-if (!file.exists(f)) {
-  out <- furrr::future_pmap_dfr(torun, sim_and_fit)
-#  out <- purrr::pmap_dfr(torun, sim_and_fit)
-  saveRDS(out, file = f)
-} else {
-  out <- readRDS(f)
-}
+# f <- "output/sim-grid-output.rds"
+# if (!file.exists(f)) {
+#   out <- furrr::future_pmap_dfr(torun, sim_and_fit)
+# #  out <- purrr::pmap_dfr(torun, sim_and_fit)
+#   saveRDS(out, file = f)
+# } else {
+#   out <- readRDS(f)
+# }
 
-f <- "output/sim-grid-output-small.rds"
+f <- "output/sim-grid-output-small-lognormal.rds"
 if (!file.exists(f)) {
   torun <- expand.grid(
-    .phi = c(0.1, 1, 2),
+    .phi = c(0.5, 1, 2),
     .sigma_O = c(0.5, 1, 2),
     .range = c(0.05, 0.1, 0.2),
     N = c(1000)
@@ -142,11 +142,11 @@ if (!file.exists(f)) {
   out_small <- readRDS(f)
 }
 
-make_panels <- function(.term, data = out) {
+make_panels <- function(.term, data = out_small) {
   x <- pivot_longer(data, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
     filter(name == .term) |>
     mutate(sigma_O_clean = paste0("Spatial SD: ", round(sigma_O, 2))) |>
-    mutate(phi_clean = paste0("Observation\nSD: ", round(phi, 2)))
+    mutate(phi_clean = paste0("Observation\nlog-SD: ", round(phi, 2)))
 
   if (.term == "sigma_O_hat") {
     x <- filter(x, value < 10)
@@ -154,6 +154,17 @@ make_panels <- function(.term, data = out) {
   }
   if (.term == "range_hat") {
     x <- filter(x, value < 20)
+  }
+
+  if (.term %in% c("leftout_loglik", "rmse_true")) {
+    x <- x |>
+      group_by(phi, sigma_O, range, seed) |>
+      mutate(value = if (.term == "leftout_loglik") {
+        value - max(value, na.rm = TRUE)
+      } else {
+        value - min(value, na.rm = TRUE)
+      }) |>
+      ungroup()
   }
 
   true <- select(x, -value, -seed, -name, -cutoff) |> distinct()
@@ -183,7 +194,7 @@ make_panels <- function(.term, data = out) {
   if (.term == "phi_hat") {
     g <- g +
       geom_hline(data = true, mapping = aes(yintercept = phi), lty = 2) +
-      ylab("Observation SD (phi)")
+      ylab("Observation log-SD (phi)")
   }
   if (.term == "rmse_true") {
     g <- g + ylab("Predictive RMSE from truth")
@@ -197,7 +208,7 @@ make_panels <- function(.term, data = out) {
   # }
 
   ggsave(paste0("figures/sim-grid-", .term, ".pdf"),
-    width = 9, height = 6
+    width = 6, height = 4
   )
 }
 make_panels("rmse_true")
@@ -210,10 +221,17 @@ make_panels("leftout_loglik")
 x <- pivot_longer(out_small, cols = c(leftout_loglik, phi_hat, sigma_O_hat, range_hat, rmse_true)) |>
   filter(name == "leftout_loglik")
 # true <- select(x, -value, -seed, -name, -cutoff) |> distinct()
-x |>
-  mutate(sigma_O_clean = paste0("Spatial SD: ", round(sigma_O, 2))) |>
-  mutate(phi_clean = paste0("Observation\nSD: ", round(phi, 2))) |>
-  ggplot(aes(mesh_n, value)) +
+ggplot(
+  data = x |>
+    group_by(phi, sigma_O, range, seed) |>
+    # mutate(value = (value - min(value, na.rm = TRUE)) /
+    #   (max(value, na.rm = TRUE) - min(value, na.rm = TRUE))) |>
+    mutate(value = value - max(value, na.rm = TRUE)) |>
+    ungroup() |>
+    mutate(sigma_O_clean = paste0("Spatial SD: ", round(sigma_O, 2))) |>
+    mutate(phi_clean = paste0("Observation\nlog-SD: ", round(phi, 2))),
+  aes(mesh_n, value)
+) +
   facet_grid(phi_clean ~ sigma_O_clean, scales = "free") +
   ylab("Log predictive density") +
   xlab("Mesh vertices") +
@@ -221,7 +239,7 @@ x |>
   geom_line(aes(colour = factor(round(range, 2)))) +
   ggsidekick::theme_sleek() +
   scale_colour_viridis_d(end = 0.9, option = "C") +
-  tagger::tag_facets(tag_prefix = "(", position = list(x = 0.08, y = 0.89), tag = "panel") +
+  tagger::tag_facets(tag_prefix = "(", position = "bl", tag = "panel") +
   theme(tagger.panel.tag.text = element_text(colour = "grey30"))
 ggsave("figures/sim-grid-small-lpd.pdf", width = 6, height = 4)
 ggsave("figures/sim-grid-small-lpd.png", width = 6, height = 4)
