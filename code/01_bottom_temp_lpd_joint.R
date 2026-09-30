@@ -103,3 +103,49 @@ ggplot(out, aes(n, lpd)) +
   geom_point() +
   xlab("Mesh vertices (sdmTMB)\nor basis dimension k (mgcv)") +
   ylab("Out-of-sample average\nlog predictive density")
+
+# -------------------------------------------------------------------
+# How does predictive uncertainty at left-out data change with the number of
+# knots? For each fold, fit to the training data, draw link-scale predictions
+# at the held-out points (joint precision), and take the SD across draws.
+
+heldout_sd <- function(cutoff, nsim = 500L) {
+  mesh <- make_inla_mesh(cutoff)
+  purrr::map(sort(unique(haul$fold_id)), function(ii) {
+    train <- haul[haul$fold_id != ii, ]
+    heldout <- haul[haul$fold_id == ii, ]
+    fit <- sdmTMB(
+      temperature_at_gear_c_der ~ zday + I(zday^2),
+      data = train,
+      mesh = make_mesh(train, c("X", "Y"), mesh = mesh)
+    )
+    p <- predict(fit, newdata = heldout, nsim = nsim)
+    heldout$sd_link <- apply(p, 1, sd)
+    heldout$n <- mesh$n
+    heldout[, c("X", "Y", "fold_id", "n", "sd_link")]
+  }) |> bind_rows()
+}
+
+plan(multisession, workers = 6L)
+hsd <- furrr::future_map(cutoffs, heldout_sd, .options = opts) |> bind_rows()
+plan(sequential)
+
+hsd$n_lab <- factor(paste(hsd$n, "vertices"), levels = paste(sort(unique(hsd$n)), "vertices"))
+
+ggplot(hsd, aes(X, Y, colour = sd_link)) +
+  geom_point(size = 0.8) +
+  facet_wrap(~n_lab) +
+  coord_fixed() +
+  scale_colour_viridis_c(option = "C") +
+  labs(colour = "SD of held-out\nlink-scale prediction", x = "UTM X (km)", y = "UTM Y (km)")
+
+hsd |>
+  group_by(n) |>
+  summarise(mean_sd = mean(sd_link), median_sd = median(sd_link)) |>
+  tidyr::pivot_longer(-n) |>
+  ggplot(aes(n, value, linetype = name)) +
+  geom_line() +
+  geom_point() +
+  xlab("Mesh vertices") +
+  ylab("SD of held-out link-scale prediction") +
+  labs(linetype = NULL)
